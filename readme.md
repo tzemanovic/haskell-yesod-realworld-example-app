@@ -14,9 +14,9 @@ For more information on how to this works with other frontends/backends, head ov
 
 # Progress
 API route status
-- [ ] Authentication (`POST /api/users/login`)
+- [X] Authentication (`POST /api/users/login`)
 - [ ] Registration (`POST /api/users`)
-- [ ] Get Current User (`GET /api/user`)
+- [X] Get Current User (`GET /api/user`)
 - [ ] Update User (`PUT /api/user`)
 - [ ] Get Profile (`GET/api/profiles/:username`)
 - [ ] Follow user (`POST /api/profiles/:username/follow`)
