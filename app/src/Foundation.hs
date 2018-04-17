@@ -161,6 +161,7 @@ instance Yesod App where
     isAuthorized (StaticR _) _ = return Authorized
     -- conduit
     isAuthorized UsersLoginR _ = return Authorized
+    isAuthorized UsersRegisterR _ = return Authorized
 
     isAuthorized ProfileR _ = isAuthenticated
     -- conduit
@@ -235,9 +236,8 @@ instance YesodAuth App where
 
 jwtAuthId :: Handler (Maybe UserId)
 jwtAuthId = do
-  Just auth <- lookupHeader "Authorization"
-
-  case extractToken (decodeUtf8 auth) of
+  mAuth <- lookupHeader "Authorization"
+  case extractToken . decodeUtf8 =<< mAuth of
     Just token -> tokenToUserId token
     _          -> return Nothing
 

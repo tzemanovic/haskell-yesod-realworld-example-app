@@ -1,38 +1,47 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
-{-# LANGUAGE TemplateHaskell   #-}
 
-module Handler.User (postUsersLoginR, getUserR) where
+module Handler.User (postUsersLoginR, getUserR, postUsersRegisterR) where
 
-import Import
-import Data.Aeson as J ((.=), object)
-import Data.Aeson.TH (deriveJSON, defaultOptions)
+import Import hiding (Form, (.:), check, checkM)
+import Text.Digestive as D (View, Form, (.:), check, checkM, text)
+import Text.Digestive.Aeson (digestJSON, jsonErrors)
 import Yesod.Auth.Util.PasswordStore (verifyPassword)
+import qualified Data.Aeson as J (object)
+import qualified Text.Email.Validate as Email (isValid)
 
-data Creds' = Creds'
-  { email :: !Text
-  , password :: !Text
+
+data Login = Login
+  { loginEmail :: !Text
+  , loginPassword :: !Text
   } deriving Show
 
-$(deriveJSON defaultOptions ''Creds')
-
-newtype User' = User'
-  { user :: Creds'
+data Register = Register
+  { registerUsername :: !Text
+  , registerEmail :: !Text
+  , registerPassword :: !Text
   } deriving Show
 
-$(deriveJSON defaultOptions ''User')
-
+--------------------------------------------------------------------------------
 
 postUsersLoginR :: Handler Value
 postUsersLoginR = do
-  User' {user = Creds' {..}} <- requireJsonBody :: Handler User'
-  Just (Entity _ user@User {userPassword = pwdHash}) <-
-    runDB $ getBy $ UniqueUserEmail email
+  (view, mLogin) <- requireValidJson loginForm
 
-  if isPwd password pwdHash
-    then encodeUser user
-    else unauthorized
+  case mLogin of
+
+    Just Login {..} -> do
+      mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
+      case mUser of
+
+        Just (Entity _ user@User {userPassword = pwdHash}) | validPwd ->
+          encodeUser user
+          where validPwd = verifyPwd loginPassword pwdHash
+
+        _ -> unauthorized
+
+    _ -> returnValidationErrors view
 
 getUserR :: Handler Value
 getUserR = do
@@ -41,9 +50,72 @@ getUserR = do
 
   encodeUser user
 
+postUsersRegisterR :: Handler Value
+postUsersRegisterR = do
+  (view, mRegister) <- requireValidJson registerForm
 
-isPwd :: Text -> Text -> Bool
-isPwd password pwdHash =
+  case mRegister of
+
+    Just Register {..} -> do
+      let user = User registerEmail registerUsername registerPassword ""
+                      defaultUserImage
+      _ <- runDB $ insert user
+      encodeUser user
+
+    _ -> returnValidationErrors view
+
+--------------------------------------------------------------------------------
+
+requireValidJson ::  Form v Handler a -> Handler (View v, Maybe a)
+requireValidJson form = do
+  json <- requireJsonBody :: Handler Value
+  digestJSON form json
+
+returnValidationErrors :: ToJSON v => View v -> Handler Value
+returnValidationErrors view =
+  sendResponseStatus status400 $ jsonErrors view
+
+
+loginForm :: Monad m => Form Text m Login
+loginForm =
+  "user" .: login
+  where login = Login <$> "email"    .: nonEmptyText
+                      <*> "password" .: nonEmptyText
+
+registerForm :: Form Text Handler Register
+registerForm =
+  "user" .: register
+  where register = Register <$> "username" .: uniqueUsername
+                            <*> "email"    .: uniqueValidEmail
+                            <*> "password" .: nonEmptyText
+
+nonEmptyText :: Monad m => Form Text m Text
+nonEmptyText = check "Can't be empty" (not . null) (text Nothing)
+
+uniqueUsername :: Form Text Handler Text
+uniqueUsername = checkM "This username is already being used"
+              (\username -> do
+                  mUser <- runDB $ getBy $ UniqueUsername username
+                  return $ isNothing mUser
+              ) nonEmptyText
+
+uniqueValidEmail :: Form Text Handler Text
+uniqueValidEmail = checkM "This email is already being used"
+              (\email -> do
+                  mUser <- runDB $ getBy $ UniqueUserEmail email
+                  return $ isNothing mUser
+              ) validEmail
+
+validEmail :: Monad m => Form Text m Text
+validEmail = check "Invalid email" (Email.isValid . encodeUtf8) nonEmptyText
+
+--------------------------------------------------------------------------------
+
+defaultUserImage :: Text
+defaultUserImage = "https://static.productionready.io/images/smiley-cyrus.jpg"
+
+verifyPwd :: Text -> Text -> Bool
+verifyPwd password pwdHash =
   verifyPassword (encodeUtf8 password) $ encodeUtf8 pwdHash
 
 unauthorized :: Handler Value

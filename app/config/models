@@ -9,7 +9,7 @@ User
     image Text
     UniqueUsername username
     UniqueUserEmail email
-    deriving Typeable
+    deriving Show Typeable
 
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
     message Text

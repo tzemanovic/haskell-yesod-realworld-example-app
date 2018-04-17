@@ -16,3 +16,4 @@
 -- Conduit
 /api/users/login UsersLoginR POST
 /api/user UserR GET
+/api/users UsersRegisterR POST

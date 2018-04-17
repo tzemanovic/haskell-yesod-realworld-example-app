@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 12520a7015ab9ad132017f1d667bb2413aa9323f9354d03ad10587767606fd62
+-- hash: e55c43b7747eb0c1e50c8025e85b6c5224c0930b6ebbfad06d454b396a3a8082
 
 name:           app
 version:        0.0.0
@@ -33,7 +33,10 @@ library
     , conduit >=1.0 && <2.0
     , containers
     , data-default
+    , digestive-functors
+    , digestive-functors-aeson
     , directory >=1.1 && <1.4
+    , email-validate
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
@@ -102,7 +105,10 @@ executable app
     , conduit >=1.0 && <2.0
     , containers
     , data-default
+    , digestive-functors
+    , digestive-functors-aeson
     , directory >=1.1 && <1.4
+    , email-validate
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
@@ -157,7 +163,10 @@ test-suite test
     , conduit >=1.0 && <2.0
     , containers
     , data-default
+    , digestive-functors
+    , digestive-functors-aeson
     , directory >=1.1 && <1.4
+    , email-validate
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store

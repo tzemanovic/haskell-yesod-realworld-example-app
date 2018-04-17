@@ -48,6 +48,9 @@ dependencies:
 - wai
 - foreign-store
 - word8
+- digestive-functors
+- digestive-functors-aeson
+- email-validate
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
