@@ -28,7 +28,6 @@ data Register = Register
 postUsersLoginR :: Handler Value
 postUsersLoginR = do
   (view, mLogin) <- requireValidJson loginForm
-
   case mLogin of
 
     Just Login {..} -> do
@@ -47,13 +46,11 @@ getUserR :: Handler Value
 getUserR = do
   Just userId <- maybeAuthId
   Just user <- runDB $ get userId
-
   encodeUser user
 
 postUsersRegisterR :: Handler Value
 postUsersRegisterR = do
   (view, mRegister) <- requireValidJson registerForm
-
   case mRegister of
 
     Just Register {..} -> do
@@ -73,41 +70,34 @@ requireValidJson form = do
 
 returnValidationErrors :: ToJSON v => View v -> Handler Value
 returnValidationErrors view =
-  sendResponseStatus status400 $ jsonErrors view
-
+  sendResponseStatus status400 $ J.object ["errors" .= jsonErrors view]
 
 loginForm :: Monad m => Form Text m Login
-loginForm =
-  "user" .: login
-  where login = Login <$> "email"    .: nonEmptyText
-                      <*> "password" .: nonEmptyText
+loginForm = "user" .: login
+  where
+    login = Login <$> "email"    .: nonEmptyText
+                  <*> "password" .: nonEmptyText
 
 registerForm :: Form Text Handler Register
-registerForm =
-  "user" .: register
-  where register = Register <$> "username" .: uniqueUsername
-                            <*> "email"    .: uniqueValidEmail
-                            <*> "password" .: nonEmptyText
+registerForm = "user" .: register
+  where
+    register = Register <$> "username" .: uniqueUsername nonEmptyText
+                        <*> "email"    .: uniqueEmail (validEmail nonEmptyText)
+                        <*> "password" .: nonEmptyText
 
 nonEmptyText :: Monad m => Form Text m Text
 nonEmptyText = check "Can't be empty" (not . null) (text Nothing)
 
-uniqueUsername :: Form Text Handler Text
+uniqueUsername :: Form Text Handler Text -> Form Text Handler Text
 uniqueUsername = checkM "This username is already being used"
-              (\username -> do
-                  mUser <- runDB $ getBy $ UniqueUsername username
-                  return $ isNothing mUser
-              ) nonEmptyText
+    (runDB . (isNothing <$>) . getBy . UniqueUsername)
 
-uniqueValidEmail :: Form Text Handler Text
-uniqueValidEmail = checkM "This email is already being used"
-              (\email -> do
-                  mUser <- runDB $ getBy $ UniqueUserEmail email
-                  return $ isNothing mUser
-              ) validEmail
+uniqueEmail :: Form Text Handler Text -> Form Text Handler Text
+uniqueEmail = checkM "This email is already being used"
+    (runDB . (isNothing <$>) . getBy . UniqueUserEmail)
 
-validEmail :: Monad m => Form Text m Text
-validEmail = check "Invalid email" (Email.isValid . encodeUtf8) nonEmptyText
+validEmail :: Monad m => Form Text m Text -> Form Text m Text
+validEmail = check "Invalid email" (Email.isValid . encodeUtf8)
 
 --------------------------------------------------------------------------------
 
