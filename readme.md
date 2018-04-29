@@ -41,4 +41,3 @@ API route status
 # Getting started
 
 > npm install, npm start, etc.
-
