@@ -160,8 +160,8 @@ instance Yesod App where
     isAuthorized RobotsR _ = return Authorized
     isAuthorized (StaticR _) _ = return Authorized
     -- conduit
-    isAuthorized UsersLoginR _ = return Authorized
     isAuthorized UsersRegisterR _ = return Authorized
+    isAuthorized UsersLoginR _ = return Authorized
 
     isAuthorized ProfileR _ = isAuthenticated
     -- conduit
@@ -250,8 +250,10 @@ tokenToUserId token = do
 
 getUserId :: Text -> Handler (Maybe UserId)
 getUserId username = do
-  Just (Entity userId _) <- runDB $ getBy $ UniqueUsername username
-  return $ Just userId
+  mUser <- runDB $ getBy $ UniqueUsername username
+  case mUser of
+    Just (Entity userId _) -> return $ Just userId
+    _ ->                      return Nothing
 
 extractToken :: Text -> Maybe Text
 extractToken auth
