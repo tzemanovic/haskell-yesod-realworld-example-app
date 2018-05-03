@@ -88,7 +88,7 @@ makeFoundation appSettings = do
     -- Perform database migration using our application's logging settings.
     flip runLoggingT logFunc $ flip runSqlPool pool $ do
       runMigration migrateAll
-      -- deleteBy $ UniqueUsername "tzemanovic"
+      -- deleteBy $ UniqueUserEmail "tzemanovic@gmail.com"
       -- tzPwd <- liftIO $ makePassword "test" 14
       -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" ""
 

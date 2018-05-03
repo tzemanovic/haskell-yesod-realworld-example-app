@@ -14,6 +14,6 @@
 /profile ProfileR GET
 
 -- Conduit
-/api/users/login UsersLoginR POST
-/api/user UserR GET
+/api/user UserR GET PUT
 /api/users UsersRegisterR POST
+/api/users/login UsersLoginR POST

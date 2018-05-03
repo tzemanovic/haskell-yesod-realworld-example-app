@@ -2,28 +2,76 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module Handler.User (postUsersLoginR, getUserR, postUsersRegisterR) where
+module Handler.User
+  (getUserR, putUserR, postUsersLoginR, postUsersRegisterR)
+  where
 
-import Import hiding (Form, (.:), check, checkM)
-import Text.Digestive as D (View, Form, (.:), check, checkM, text)
-import Text.Digestive.Aeson (digestJSON, jsonErrors)
-import Yesod.Auth.Util.PasswordStore (verifyPassword)
-import qualified Data.Aeson as J (object)
-import qualified Text.Email.Validate as Email (isValid)
+import qualified Data.Aeson                    as J (object)
+import           Database.Persist.Extended
+import           Import                        hiding (Form, (.:))
+import           Text.Digestive.Aeson.Extended
+import           Yesod.Auth.Util.PasswordStore (verifyPassword)
 
 
-data Login = Login
-  { loginEmail :: !Text
-  , loginPassword :: !Text
+data Update' = Update'
+  { updateUsername :: Maybe Text
+  , updateEmail    :: Maybe Text
+  , updatePassword :: Maybe Text
+  , updateImage    :: Maybe Text
+  , updateBio      :: Maybe Text
   } deriving Show
 
 data Register = Register
   { registerUsername :: !Text
-  , registerEmail :: !Text
+  , registerEmail    :: !Text
   , registerPassword :: !Text
   } deriving Show
 
+data Login = Login
+  { loginEmail    :: !Text
+  , loginPassword :: !Text
+  } deriving Show
+
 --------------------------------------------------------------------------------
+
+getUserR :: Handler Value
+getUserR = do
+  Just userId <- maybeAuthId
+  Just user <- runDB $ get userId
+  encodeUser user
+
+putUserR :: Handler Value
+putUserR = do
+  Just userId <- maybeAuthId
+  Just user <- runDB $ get userId
+  (view, mUpdate) <- requireValidJson (updateForm user)
+  case mUpdate of
+
+    Just Update' {..} -> do
+      let updates =
+            addUpdateNotNull UserUsername updateUsername $
+            addUpdateNotNull UserEmail    updateEmail    $
+            addUpdateNotNull UserPassword updatePassword $
+            addUpdate        UserImage    updateImage    $
+            addUpdate        UserBio      updateBio      []
+
+      updatedUser <- runDB $ updateGet userId updates
+      encodeUser updatedUser
+
+    _ -> returnValidationErrors view
+
+postUsersRegisterR :: Handler Value
+postUsersRegisterR = do
+  (view, mRegister) <- requireValidJson registerForm
+  case mRegister of
+
+    Just Register {..} -> do
+      let user = User registerEmail registerUsername registerPassword ""
+                      defaultUserImage
+      _ <- runDB $ insert user
+      encodeUser user
+
+    _ -> returnValidationErrors view
 
 postUsersLoginR :: Handler Value
 postUsersLoginR = do
@@ -42,41 +90,18 @@ postUsersLoginR = do
 
     _ -> returnValidationErrors view
 
-getUserR :: Handler Value
-getUserR = do
-  Just userId <- maybeAuthId
-  Just user <- runDB $ get userId
-  encodeUser user
-
-postUsersRegisterR :: Handler Value
-postUsersRegisterR = do
-  (view, mRegister) <- requireValidJson registerForm
-  case mRegister of
-
-    Just Register {..} -> do
-      let user = User registerEmail registerUsername registerPassword ""
-                      defaultUserImage
-      _ <- runDB $ insert user
-      encodeUser user
-
-    _ -> returnValidationErrors view
-
 --------------------------------------------------------------------------------
 
-requireValidJson ::  Form v Handler a -> Handler (View v, Maybe a)
-requireValidJson form = do
-  json <- requireJsonBody :: Handler Value
-  digestJSON form json
-
-returnValidationErrors :: ToJSON v => View v -> Handler Value
-returnValidationErrors view =
-  sendResponseStatus status400 $ J.object ["errors" .= jsonErrors view]
-
-loginForm :: Monad m => Form Text m Login
-loginForm = "user" .: login
+updateForm :: User -> Form Text Handler Update'
+updateForm User {..} = "user" .: userUpdate
   where
-    login = Login <$> "email"    .: nonEmptyText
-                  <*> "password" .: nonEmptyText
+    username = uniqueUsernameIfChanged userUsername
+    email = uniqueEmailIfChanged userEmail
+    userUpdate = Update' <$> "username" .: username
+                         <*> "email"    .: email
+                         <*> "password" .: nonEmptyIfSet
+                         <*> "image"    .: optionalEmptyText
+                         <*> "bio"      .: optionalEmptyText
 
 registerForm :: Form Text Handler Register
 registerForm = "user" .: register
@@ -85,19 +110,11 @@ registerForm = "user" .: register
                         <*> "email"    .: uniqueEmail (validEmail nonEmptyText)
                         <*> "password" .: nonEmptyText
 
-nonEmptyText :: Monad m => Form Text m Text
-nonEmptyText = check "Can't be empty" (not . null) (text Nothing)
-
-uniqueUsername :: Form Text Handler Text -> Form Text Handler Text
-uniqueUsername = checkM "This username is already being used"
-    (runDB . (isNothing <$>) . getBy . UniqueUsername)
-
-uniqueEmail :: Form Text Handler Text -> Form Text Handler Text
-uniqueEmail = checkM "This email is already being used"
-    (runDB . (isNothing <$>) . getBy . UniqueUserEmail)
-
-validEmail :: Monad m => Form Text m Text -> Form Text m Text
-validEmail = check "Invalid email" (Email.isValid . encodeUtf8)
+loginForm :: Monad m => Form Text m Login
+loginForm = "user" .: login
+  where
+    login = Login <$> "email"    .: nonEmptyText
+                  <*> "password" .: nonEmptyText
 
 --------------------------------------------------------------------------------
 

@@ -1,8 +1,8 @@
--- This file has been generated from package.yaml by hpack version 0.20.0.
+-- This file has been generated from package.yaml by hpack version 0.28.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e55c43b7747eb0c1e50c8025e85b6c5224c0930b6ebbfad06d454b396a3a8082
+-- hash: 2afc199a7a78c65a72aafb6e178c55f6303dadaed66d31255f2b2e4d7df4602b
 
 name:           app
 version:        0.0.0
@@ -73,6 +73,7 @@ library
     ghc-options: -Wall -fwarn-tabs -O2
   exposed-modules:
       Application
+      Database.Persist.Extended
       Foundation
       Handler.Comment
       Handler.Common
@@ -84,6 +85,7 @@ library
       Model
       Settings
       Settings.StaticFiles
+      Text.Digestive.Aeson.Extended
   other-modules:
       Paths_app
   default-language: Haskell2010
