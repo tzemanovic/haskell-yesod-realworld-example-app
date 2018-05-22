@@ -51,6 +51,9 @@ dependencies:
 - digestive-functors
 - digestive-functors-aeson
 - email-validate
+- forma == 1.0.0
+- mtl
+- http-types
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

@@ -42,6 +42,7 @@ packages:
 extra-deps:
 - digestive-functors-0.8.3.0
 - digestive-functors-aeson-1.1.24
+- ./forma-1.0.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

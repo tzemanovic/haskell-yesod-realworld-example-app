@@ -65,7 +65,6 @@ makeFoundation appSettings = do
     appStatic <-
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
-
     appJwtSecret <- fromString <$> getEnv "JWT_SECRET"
 
     -- We need a log function to create a connection pool. We need a connection
@@ -89,7 +88,7 @@ makeFoundation appSettings = do
     flip runLoggingT logFunc $ flip runSqlPool pool $ do
       runMigration migrateAll
       -- deleteBy $ UniqueUserEmail "tzemanovic@gmail.com"
-      -- tzPwd <- liftIO $ makePassword "test" 14
+      -- tzPwd <- lift $ makePassword "test" 14
       -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" ""
 
     -- Return the foundation

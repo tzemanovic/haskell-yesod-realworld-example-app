@@ -221,15 +221,12 @@ instance YesodAuth App where
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
 
-    authPlugins app = extraAuthPlugins
-        -- Enable authDummy login if enabled.
-        where extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
+    authPlugins _ = []
 
     authHttpManager = error "Doesn't need an HTTP manager"
 
-    authenticate _ = do
-      authId <- maybeAuthId
-      return $ maybe (UserError AuthMsg.InvalidLogin) Authenticated authId
+    authenticate _ =
+      maybe (UserError AuthMsg.InvalidLogin) Authenticated <$> maybeAuthId
 
     maybeAuthId = jwtAuthId
 

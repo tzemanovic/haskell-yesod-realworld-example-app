@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
@@ -6,13 +8,22 @@ module Handler.User
   (getUserR, putUserR, postUsersLoginR, postUsersRegisterR)
   where
 
-import qualified Data.Aeson                    as J (object)
+import           Control.Monad.Except          (ExceptT, throwError)
+import           Data.Aeson                    (object)
+import qualified Data.HashMap.Strict           as HM
+import qualified Data.Map.Strict               as M
+import qualified Data.Text                     as T
 import           Database.Persist.Extended
-import           Import                        hiding (Form, (.:))
+import           Import                        hiding (Form, foldr, (.:))
+import           Network.HTTP.Types.Status     (status422)
+import           Prelude                       (foldr)
 import           Text.Digestive.Aeson.Extended
-import           Yesod.Auth.Util.PasswordStore (verifyPassword)
+import           Web.Forma                     (FormParser, FormResult (..),
+                                                field, runForm, subParser,
+                                                unFieldName)
+import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 
-
+-- TODO replace with forma
 data Update' = Update'
   { updateUsername :: Maybe Text
   , updateEmail    :: Maybe Text
@@ -27,10 +38,18 @@ data Register = Register
   , registerPassword :: !Text
   } deriving Show
 
+type LoginFields = '["user", "email", "password"]
+
 data Login = Login
-  { loginEmail    :: !Text
-  , loginPassword :: !Text
+  { loginEmail    :: Text
+  , loginPassword :: Text
   } deriving Show
+
+loginForm :: Monad m => FormParser LoginFields Text m Login
+loginForm =
+  subParser #user (Login
+    <$> field #email notEmpty
+    <*> field #password notEmpty)
 
 --------------------------------------------------------------------------------
 
@@ -66,7 +85,8 @@ postUsersRegisterR = do
   case mRegister of
 
     Just Register {..} -> do
-      let user = User registerEmail registerUsername registerPassword ""
+      pwdHash <- lift $ makePassword (encodeUtf8 registerPassword) 14
+      let user = User registerEmail registerUsername (decodeUtf8 pwdHash) ""
                       defaultUserImage
       _ <- runDB $ insert user
       encodeUser user
@@ -74,21 +94,62 @@ postUsersRegisterR = do
     _ -> returnValidationErrors view
 
 postUsersLoginR :: Handler Value
-postUsersLoginR = do
-  (view, mLogin) <- requireValidJson loginForm
-  case mLogin of
+postUsersLoginR =
+  withForm loginForm $ \Login {..} -> do
+    mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
+    case mUser of
 
-    Just Login {..} -> do
-      mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
-      case mUser of
+      Just (Entity _ user@User {userPassword = pwdHash}) | validPwd ->
+        encodeUser user
+        where validPwd = verifyPwd loginPassword pwdHash
 
-        Just (Entity _ user@User {userPassword = pwdHash}) | validPwd ->
-          encodeUser user
-          where validPwd = verifyPwd loginPassword pwdHash
+      _ -> unauthorized
 
-        _ -> unauthorized
+--------------------------------------------------------------------------------
 
-    _ -> returnValidationErrors view
+withForm ::
+     ToJSON e
+  => FormParser names e Handler a
+  -> (a -> Handler Value)
+  -> Handler Value
+withForm f withSucceeded = do
+  body <- requireJsonBody :: Handler Value
+  r <- runForm f body
+  case r of
+    Succeeded value ->
+      withSucceeded value
+
+    ParsingFailed path msg ->
+      sendResponseStatus status400 $ errors $
+        maybe val (flip fieldPathToJSON val . unFieldName) path
+      where val = String msg
+
+    ValidationFailed err ->
+      sendResponseStatus status422 $ errors $
+        concatObjects $
+          uncurry fieldPathToJSON . first unFieldName . second toJSON <$>
+            M.toAscList err
+  where errors e = object [ "errors" .= e ]
+
+concatObjects :: [Value] -> Value
+concatObjects =
+  Object . foldr (HM.unionWith concatValues . unwrap) HM.empty
+  where
+    unwrap (Object o) = o
+    unwrap _          = HM.empty
+
+-- | Concatenate JSON objects\' values.
+
+concatValues :: Value -> Value -> Value
+concatValues (Object o1) (Object o2)  = Object $ HM.unionWith concatValues o1 o2
+concatValues _           o@(Object _) = o
+concatValues o           _            = o
+
+-- | Unroll the field path to JSON that mimics the structure of the input.
+
+fieldPathToJSON :: Foldable t => t Text -> Value -> Value
+fieldPathToJSON =
+  flip $ foldr (\next acc -> object [next .= acc])
 
 --------------------------------------------------------------------------------
 
@@ -110,11 +171,13 @@ registerForm = "user" .: register
                         <*> "email"    .: uniqueEmail (validEmail nonEmptyText)
                         <*> "password" .: nonEmptyText
 
-loginForm :: Monad m => Form Text m Login
-loginForm = "user" .: login
-  where
-    login = Login <$> "email"    .: nonEmptyText
-                  <*> "password" .: nonEmptyText
+--------------------------------------------------------------------------------
+
+notEmpty :: Monad m => Text -> ExceptT Text m Text
+notEmpty txt =
+  if T.null txt
+    then throwError "This field cannot be empty."
+    else return txt
 
 --------------------------------------------------------------------------------
 
@@ -131,8 +194,8 @@ unauthorized = sendResponseStatus status401 Null
 encodeUser :: User -> Handler Value
 encodeUser User {..} = do
   token <- usernameToJwtToken userUsername
-  return $ J.object
-    [ "user" .= J.object
+  return $ object
+    [ "user" .= object
         [ "email" .= userEmail
         , "username" .= userUsername
         , "token" .= token

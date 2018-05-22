@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2afc199a7a78c65a72aafb6e178c55f6303dadaed66d31255f2b2e4d7df4602b
+-- hash: 66955b6bbaa59aedd7422dd0fa66252a606c39d0746e121ae4ddbe1f604c57ee
 
 name:           app
 version:        0.0.0
@@ -20,6 +20,21 @@ flag library-only
   default: False
 
 library
+  exposed-modules:
+      Application
+      Database.Persist.Extended
+      Foundation
+      Handler.Comment
+      Handler.Common
+      Handler.Home
+      Handler.Profile
+      Handler.User
+      Import
+      Import.NoFoundation
+      Model
+      Settings
+      Settings.StaticFiles
+      Text.Digestive.Aeson.Extended
   hs-source-dirs:
       src
   build-depends:
@@ -40,11 +55,14 @@ library
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
+    , forma ==1.0.0
     , hjsmin >=0.1 && <0.3
     , http-conduit >=2.1 && <2.3
+    , http-types
     , jwt >=0.7.2 && <0.8
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
+    , mtl
     , persistent >=2.0 && <2.8
     , persistent-sqlite >=2.6.2 && <2.8
     , persistent-template >=2.0 && <2.8
@@ -71,21 +89,6 @@ library
     cpp-options: -DDEVELOPMENT
   else
     ghc-options: -Wall -fwarn-tabs -O2
-  exposed-modules:
-      Application
-      Database.Persist.Extended
-      Foundation
-      Handler.Comment
-      Handler.Common
-      Handler.Home
-      Handler.Profile
-      Handler.User
-      Import
-      Import.NoFoundation
-      Model
-      Settings
-      Settings.StaticFiles
-      Text.Digestive.Aeson.Extended
   other-modules:
       Paths_app
   default-language: Haskell2010
@@ -114,11 +117,14 @@ executable app
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
+    , forma ==1.0.0
     , hjsmin >=0.1 && <0.3
     , http-conduit >=2.1 && <2.3
+    , http-types
     , jwt >=0.7.2 && <0.8
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
+    , mtl
     , persistent >=2.0 && <2.8
     , persistent-sqlite >=2.6.2 && <2.8
     , persistent-template >=2.0 && <2.8
@@ -172,13 +178,16 @@ test-suite test
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
+    , forma ==1.0.0
     , hjsmin >=0.1 && <0.3
     , hspec >=2.0.0
     , http-conduit >=2.1 && <2.3
+    , http-types
     , jwt >=0.7.2 && <0.8
     , microlens
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
+    , mtl
     , persistent >=2.0 && <2.8
     , persistent-sqlite >=2.6.2 && <2.8
     , persistent-template >=2.0 && <2.8
@@ -205,7 +214,7 @@ test-suite test
       Handler.CommentSpec
       Handler.CommonSpec
       Handler.HomeSpec
-      Handler.ProfileSpec
+      Handler.UserSpec
       TestImport
       Paths_app
   default-language: Haskell2010
