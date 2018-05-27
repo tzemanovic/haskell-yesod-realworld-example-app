@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 66955b6bbaa59aedd7422dd0fa66252a606c39d0746e121ae4ddbe1f604c57ee
+-- hash: 34d708cab0230d791f6113bea99f6aec9c1ca82d1c59b94434be6c4c34e46a62
 
 name:           app
 version:        0.0.0
@@ -34,7 +34,7 @@ library
       Model
       Settings
       Settings.StaticFiles
-      Text.Digestive.Aeson.Extended
+      Web.Forma.Extra
   hs-source-dirs:
       src
   build-depends:
@@ -48,14 +48,12 @@ library
     , conduit >=1.0 && <2.0
     , containers
     , data-default
-    , digestive-functors
-    , digestive-functors-aeson
     , directory >=1.1 && <1.4
     , email-validate
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
-    , forma ==1.0.0
+    , forma
     , hjsmin >=0.1 && <0.3
     , http-conduit >=2.1 && <2.3
     , http-types
@@ -110,14 +108,12 @@ executable app
     , conduit >=1.0 && <2.0
     , containers
     , data-default
-    , digestive-functors
-    , digestive-functors-aeson
     , directory >=1.1 && <1.4
     , email-validate
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
-    , forma ==1.0.0
+    , forma
     , hjsmin >=0.1 && <0.3
     , http-conduit >=2.1 && <2.3
     , http-types
@@ -160,7 +156,8 @@ test-suite test
       test
   ghc-options: -Wall
   build-depends:
-      aeson >=0.6 && <1.3
+      HUnit
+    , aeson >=0.6 && <1.3
     , app
     , base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
     , bytestring >=0.9 && <0.11
@@ -171,14 +168,12 @@ test-suite test
     , conduit >=1.0 && <2.0
     , containers
     , data-default
-    , digestive-functors
-    , digestive-functors-aeson
     , directory >=1.1 && <1.4
     , email-validate
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
-    , forma ==1.0.0
+    , forma
     , hjsmin >=0.1 && <0.3
     , hspec >=2.0.0
     , http-conduit >=2.1 && <2.3

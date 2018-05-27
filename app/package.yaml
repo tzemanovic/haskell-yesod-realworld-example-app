@@ -48,10 +48,8 @@ dependencies:
 - wai
 - foreign-store
 - word8
-- digestive-functors
-- digestive-functors-aeson
 - email-validate
-- forma == 1.0.0
+- forma
 - mtl
 - http-types
 
@@ -97,6 +95,7 @@ tests:
     dependencies:
     - app
     - hspec >=2.0.0
+    - HUnit
     - yesod-test
     - microlens
 

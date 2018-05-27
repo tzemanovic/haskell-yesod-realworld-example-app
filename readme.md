@@ -17,7 +17,7 @@ API route status
 - [X] Authentication (`POST /api/users/login`)
 - [X] Registration (`POST /api/users`)
 - [X] Get Current User (`GET /api/user`)
-- [ ] Update User (`PUT /api/user`)
+- [X] Update User (`PUT /api/user`)
 - [ ] Get Profile (`GET/api/profiles/:username`)
 - [ ] Follow user (`POST /api/profiles/:username/follow`)
 - [ ] Unfollow user (`DELETE /api/profiles/:username/follow`)

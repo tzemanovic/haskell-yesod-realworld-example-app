@@ -15,9 +15,6 @@ import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Text.Hamlet          (hamletFile)
 import Text.Jasmine         (minifym)
 
--- Used only when in "auth-dummy-login" setting is enabled.
-import Yesod.Auth.Dummy
-
 import Yesod.Default.Util   (addStaticContentExternal)
 import Yesod.Core.Types     (Logger)
 
@@ -258,13 +255,13 @@ extractToken auth
   | otherwise                       = Nothing
   where (x, y) = break isSpace auth
 
-usernameToJwtToken :: Text -> Handler Value
+usernameToJwtToken :: MonadReader App m => Text -> m Text
 usernameToJwtToken username = do
   jwtSecret <- getJwtSecret
-  return $ String $ encodeSigned HS256 jwtSecret
+  return $ encodeSigned HS256 jwtSecret
     def {unregisteredClaims = Map.fromList [("username", String username)]}
 
-jwtTokenToUsername :: Text -> Handler (Maybe Text)
+jwtTokenToUsername :: MonadReader App m => Text -> m (Maybe Text)
 jwtTokenToUsername token = do
   jwtSecret <- getJwtSecret
   return $ do
@@ -272,7 +269,7 @@ jwtTokenToUsername token = do
     String username <- JWT.unregisteredClaims (JWT.claims jwt) !? "username"
     return username
 
-getJwtSecret :: Handler JWT.Secret
+getJwtSecret :: MonadReader App m => m JWT.Secret
 getJwtSecret =
   JWT.secret . appJwtSecret <$> ask
 

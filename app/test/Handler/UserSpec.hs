@@ -1,16 +1,37 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+
 module Handler.UserSpec (spec) where
 
-import           Data.Aeson                    (encode, object, toJSON, (.=))
+import           Data.Aeson
 import           TestImport
-import           Yesod.Auth.Util.PasswordStore (makePassword)
+
+data User' = User'
+  { loginEmail    :: Text
+  , loginUsername :: Text
+  , loginToken    :: Text
+  , loginBio      :: Text
+  , loginImage    :: Text
+  } deriving Show
+
+instance FromJSON User' where
+  parseJSON (Object v) = do
+    Object u <- v .: "user"
+    User' <$> u .: "email"
+          <*> u .: "username"
+          <*> u .: "token"
+          <*> u .: "bio"
+          <*> u .: "image"
+  parseJSON _ = mzero
 
 spec :: Spec
-spec = withApp $
+spec = withApp $ do
+    let username = "test"
+        email = "test@foo.com"
+        password = "secret"
+
     describe "postUsersLoginR" $ do
-      let email = "test@foo.com"
-          password = "secret"
 
       it "non-existing user can't login" $ do
         postBody UsersLoginR $ encode $ object
@@ -22,7 +43,7 @@ spec = withApp $
         statusIs 401
 
       it "user can't login with wrong password" $ do
-        insertUser email password
+        insertUser username email password
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
@@ -35,7 +56,7 @@ spec = withApp $
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
-            , "passwor" .= ("wrong" :: Text)
+            , "fanny" .= ("wrong" :: Text)
             ]
           ]
         statusIs 400
@@ -50,11 +71,128 @@ spec = withApp $
         statusIs 422
 
       it "user can login with valid credentials" $ do
-        insertUser email password
+        insertUser username email password
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
             , "password" .= password
             ]
           ]
+
         statusIs 200
+        User' {..} <- getJsonResponse
+        assertEq "response email matches" loginEmail email
+        assertEq "response username matches" loginUsername username
+        assertNotEq "response token not empty" loginToken ""
+
+    describe "postUsersRegisterR" $ do
+
+      it "user can't register with a duplicate username" $ do
+        insertUser username email password
+        postBody UsersRegisterR $ encode $ object
+          [ "user" .= object
+            [ "username" .= ("foo" :: Text)
+            , "email" .= email
+            , "password" .= password
+            ]
+          ]
+        statusIs 422
+
+      it "user can't register with an invalid email" $ do
+        insertUser username email password
+        postBody UsersRegisterR $ encode $ object
+          [ "user" .= object
+            [ "username" .= username
+            , "email" .= ("foo" :: Text)
+            , "password" .= password
+            ]
+          ]
+        statusIs 422
+
+      it "user can't register with a duplicate email" $ do
+        insertUser username email password
+        postBody UsersRegisterR $ encode $ object
+          [ "user" .= object
+            [ "username" .= username
+            , "email" .= ("foo@bar.com" :: Text)
+            , "password" .= password
+            ]
+          ]
+        statusIs 422
+
+      it "user can register" $ do
+        postBody UsersRegisterR $ encode $ object
+          [ "user" .= object
+            [ "username" .= username
+            , "email" .= email
+            , "password" .= password
+            ]
+          ]
+
+        statusIs 200
+        User' {..} <- getJsonResponse
+        assertEq "response email matches" loginEmail email
+        assertEq "response username matches" loginUsername username
+        assertNotEq "response token not empty" loginToken ""
+
+        mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
+        case mUser of
+          Just (Entity _ User {..}) -> do
+            assertEq "DB email matches" userEmail email
+            assertEq "DB username matches" userUsername username
+          _ ->
+            lift $ assertFailure "user not found in the DB"
+
+    describe "getUserR" $ do
+
+      it "get current user is forbidden when not authenticated" $ do
+        get UserR
+        statusIs 403
+
+      it "get current user" $ do
+        insertUser username email password
+        authenticatedRequest username $ do
+          setMethod "GET"
+          setUrl UserR
+        statusIs 200
+
+    describe "putUserR" $ do
+
+      it "can't update user with a duplicate email" $ do
+        let otherUsername = "taken" :: Text
+            otherEmail = "taken@bar.com" :: Text
+            otherPassword = "something" :: Text
+        insertUser username email password
+        insertUser otherUsername otherEmail otherPassword
+        authenticatedRequest username $ do
+          setMethod "PUT"
+          setUrl UserR
+          setRequestBody $ encode $ object
+            [ "user" .= object
+              [ "username" .= otherUsername
+              ]
+            ]
+        statusIs 422
+
+      it "update user" $ do
+        let newUsername = "new username" :: Text
+            newBio = "In id erat non orci commodo lobortis." :: Text
+        insertUser username email password
+        authenticatedRequest username $ do
+          setMethod "PUT"
+          setUrl UserR
+          setRequestBody $ encode $ object
+            [ "user" .= object
+              [ "username" .= newUsername
+              , "bio" .= newBio
+              ]
+            ]
+        statusIs 200
+
+        mUser <- runDB $ getBy $ UniqueUserEmail email
+        case mUser of
+          Just (Entity _ User {..}) -> do
+            assertEq "DB username updated" userUsername newUsername
+            assertEq "DB bio updated" userBio newBio
+          _ ->
+            lift $ assertFailure "user not found in the DB"

@@ -1,6 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE RecordWildCards   #-}
+
 module TestImport
     ( module TestImport
     , module X
@@ -9,6 +11,8 @@ module TestImport
 import           Application                   (makeFoundation, makeLogWare)
 import           ClassyPrelude                 as X hiding (Handler, delete,
                                                      deleteBy)
+import           Data.Aeson                    (FromJSON, Result (..), decode,
+                                                fromJSON)
 import           Database.Persist              as X hiding (get)
 import           Database.Persist.Sql          (SqlPersistM, connEscapeName,
                                                 rawExecute, rawSql,
@@ -23,13 +27,17 @@ import           Yesod.Test                    as X
 
 -- Wiping the database
 import           Control.Monad.Logger          (runLoggingT)
+import qualified Data.ByteString.Lazy.Char8    as C
 import           Database.Persist.Sqlite       (createSqlitePoolFromInfo,
                                                 fkEnabled,
                                                 mkSqliteConnectionInfo,
                                                 sqlDatabase)
 import           Lens.Micro                    (set)
+import           Network.HTTP.Types.Header     as X
+import           Network.Wai.Test              (SResponse (..))
 import           Settings                      (appDatabaseConf)
 import           System.Environment            (setEnv)
+import           Test.HUnit                    as X (assertFailure)
 import           Yesod.Auth.Util.PasswordStore (makePassword)
 import           Yesod.Core                    (messageLoggerSource)
 
@@ -43,6 +51,8 @@ runHandler handler = do
     app <- getTestYesod
     fakeHandlerGetLogger appLogger app handler
 
+-- | Spec runner that sets up a test environment with DB.
+
 withApp :: SpecWith (TestApp App) -> Spec
 withApp = before $ do
     setEnv "JWT_SECRET" "test"
@@ -55,21 +65,43 @@ withApp = before $ do
     logWare <- liftIO $ makeLogWare foundation
     return (foundation, logWare)
 
-insertUser :: Text -> Text -> YesodExample App ()
-insertUser email password = do
+-- | Insert a user into the DB.
+
+insertUser :: Text -> Text -> Text -> YesodExample App ()
+insertUser username email password = do
   pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
   _ <- runDB $ insert User
         { userEmail = email
-        , userUsername = "test"
+        , userUsername = username
         , userPassword = decodeUtf8 pwdHash
         , userBio = ""
         , userImage = ""
         }
   return ()
 
--- This function will truncate all of the tables in your database.
+-- | Get response from JSON body.
+
+getJsonResponse :: FromJSON a => YesodExample App a
+getJsonResponse =
+  withResponse $ \SResponse {..} ->
+    case fromJSON <$> decode simpleBody of
+      Just (Success a) -> return a
+      _ -> lift $ assertFailure $ "cannot decode JSON: " ++ C.unpack simpleBody
+
+-- | Build a request that gets a JWT token for a given username and uses it
+-- to set the request's authentication header.
+
+authenticatedRequest :: Text -> RequestBuilder App () -> YesodExample App () 
+authenticatedRequest username reqBuilder = do
+  token <- runHandler $ usernameToJwtToken username
+  request $ do
+    addRequestHeader (hAuthorization, "token " ++ encodeUtf8 token)
+    reqBuilder
+
+-- | This function will truncate all of the tables in your database.
 -- 'withApp' calls it before each test, creating a clean environment for each
 -- spec to run in.
+
 wipeDB :: App -> IO ()
 wipeDB app = do
     -- In order to wipe the database, we need to use a connection which has

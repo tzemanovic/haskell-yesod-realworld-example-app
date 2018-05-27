@@ -5,40 +5,27 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 module Handler.User
-  (getUserR, putUserR, postUsersLoginR, postUsersRegisterR)
+  ( postUsersLoginR
+  , postUsersRegisterR
+  , getUserR
+  , putUserR
+  )
   where
 
 import           Control.Monad.Except          (ExceptT, throwError)
 import           Data.Aeson                    (object)
-import qualified Data.HashMap.Strict           as HM
-import qualified Data.Map.Strict               as M
-import qualified Data.Text                     as T
 import           Database.Persist.Extended
-import           Import                        hiding (Form, foldr, (.:))
-import           Network.HTTP.Types.Status     (status422)
-import           Prelude                       (foldr)
-import           Text.Digestive.Aeson.Extended
-import           Web.Forma                     (FormParser, FormResult (..),
-                                                field, runForm, subParser,
-                                                unFieldName)
+import           Import                        hiding (Form, FormResult)
+import           Web.Forma.Extra
+
+import qualified Text.Email.Validate           as Email
 import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 
--- TODO replace with forma
-data Update' = Update'
-  { updateUsername :: Maybe Text
-  , updateEmail    :: Maybe Text
-  , updatePassword :: Maybe Text
-  , updateImage    :: Maybe Text
-  , updateBio      :: Maybe Text
-  } deriving Show
 
-data Register = Register
-  { registerUsername :: !Text
-  , registerEmail    :: !Text
-  , registerPassword :: !Text
-  } deriving Show
+--------------------------------------------------------------------------------
+-- User login
 
-type LoginFields = '["user", "email", "password"]
+type LoginFields = '[ "user", "email", "password" ]
 
 data Login = Login
   { loginEmail    :: Text
@@ -51,48 +38,6 @@ loginForm =
     <$> field #email notEmpty
     <*> field #password notEmpty)
 
---------------------------------------------------------------------------------
-
-getUserR :: Handler Value
-getUserR = do
-  Just userId <- maybeAuthId
-  Just user <- runDB $ get userId
-  encodeUser user
-
-putUserR :: Handler Value
-putUserR = do
-  Just userId <- maybeAuthId
-  Just user <- runDB $ get userId
-  (view, mUpdate) <- requireValidJson (updateForm user)
-  case mUpdate of
-
-    Just Update' {..} -> do
-      let updates =
-            addUpdateNotNull UserUsername updateUsername $
-            addUpdateNotNull UserEmail    updateEmail    $
-            addUpdateNotNull UserPassword updatePassword $
-            addUpdate        UserImage    updateImage    $
-            addUpdate        UserBio      updateBio      []
-
-      updatedUser <- runDB $ updateGet userId updates
-      encodeUser updatedUser
-
-    _ -> returnValidationErrors view
-
-postUsersRegisterR :: Handler Value
-postUsersRegisterR = do
-  (view, mRegister) <- requireValidJson registerForm
-  case mRegister of
-
-    Just Register {..} -> do
-      pwdHash <- lift $ makePassword (encodeUtf8 registerPassword) 14
-      let user = User registerEmail registerUsername (decodeUtf8 pwdHash) ""
-                      defaultUserImage
-      _ <- runDB $ insert user
-      encodeUser user
-
-    _ -> returnValidationErrors view
-
 postUsersLoginR :: Handler Value
 postUsersLoginR =
   withForm loginForm $ \Login {..} -> do
@@ -103,83 +48,118 @@ postUsersLoginR =
         encodeUser user
         where validPwd = verifyPwd loginPassword pwdHash
 
-      _ -> unauthorized
+      _ ->
+        unauthorized
 
 --------------------------------------------------------------------------------
+-- Register new user
 
-withForm ::
-     ToJSON e
-  => FormParser names e Handler a
-  -> (a -> Handler Value)
-  -> Handler Value
-withForm f withSucceeded = do
-  body <- requireJsonBody :: Handler Value
-  r <- runForm f body
-  case r of
-    Succeeded value ->
-      withSucceeded value
+type RegisterFields = '[ "user", "username", "email", "password" ]
 
-    ParsingFailed path msg ->
-      sendResponseStatus status400 $ errors $
-        maybe val (flip fieldPathToJSON val . unFieldName) path
-      where val = String msg
+data Register = Register
+  { registerUsername :: Text
+  , registerEmail    :: Text
+  , registerPassword :: Text
+  } deriving Show
 
-    ValidationFailed err ->
-      sendResponseStatus status422 $ errors $
-        concatObjects $
-          uncurry fieldPathToJSON . first unFieldName . second toJSON <$>
-            M.toAscList err
-  where errors e = object [ "errors" .= e ]
+registerForm :: FormParser RegisterFields Text Handler Register
+registerForm =
+  subParser #user (Register
+    <$> field #username (notEmpty >=> uniqueUsername)
+    <*> field #email (notEmpty >=> validEmail >=> uniqueEmail)
+    <*> field #password notEmpty)
 
-concatObjects :: [Value] -> Value
-concatObjects =
-  Object . foldr (HM.unionWith concatValues . unwrap) HM.empty
-  where
-    unwrap (Object o) = o
-    unwrap _          = HM.empty
-
--- | Concatenate JSON objects\' values.
-
-concatValues :: Value -> Value -> Value
-concatValues (Object o1) (Object o2)  = Object $ HM.unionWith concatValues o1 o2
-concatValues _           o@(Object _) = o
-concatValues o           _            = o
-
--- | Unroll the field path to JSON that mimics the structure of the input.
-
-fieldPathToJSON :: Foldable t => t Text -> Value -> Value
-fieldPathToJSON =
-  flip $ foldr (\next acc -> object [next .= acc])
+postUsersRegisterR :: Handler Value
+postUsersRegisterR =
+  withForm registerForm $ \Register {..} -> do
+    pwdHash <- lift $ makePassword (encodeUtf8 registerPassword) 14
+    let user = User registerEmail registerUsername (decodeUtf8 pwdHash) ""
+                    defaultUserImage
+    _ <- runDB $ insert user
+    encodeUser user
 
 --------------------------------------------------------------------------------
+-- Get current user
 
-updateForm :: User -> Form Text Handler Update'
-updateForm User {..} = "user" .: userUpdate
-  where
-    username = uniqueUsernameIfChanged userUsername
-    email = uniqueEmailIfChanged userEmail
-    userUpdate = Update' <$> "username" .: username
-                         <*> "email"    .: email
-                         <*> "password" .: nonEmptyIfSet
-                         <*> "image"    .: optionalEmptyText
-                         <*> "bio"      .: optionalEmptyText
-
-registerForm :: Form Text Handler Register
-registerForm = "user" .: register
-  where
-    register = Register <$> "username" .: uniqueUsername nonEmptyText
-                        <*> "email"    .: uniqueEmail (validEmail nonEmptyText)
-                        <*> "password" .: nonEmptyText
+getUserR :: Handler Value
+getUserR = do
+  Just userId <- maybeAuthId
+  Just user <- runDB $ get userId
+  encodeUser user
 
 --------------------------------------------------------------------------------
+-- Update current user
 
-notEmpty :: Monad m => Text -> ExceptT Text m Text
-notEmpty txt =
-  if T.null txt
-    then throwError "This field cannot be empty."
-    else return txt
+type UpdateFields = '[ "user", "username", "email", "password", "image", "bio" ]
+
+data Update' = Update'
+  { updateUsername :: Maybe Text
+  , updateEmail    :: Maybe Text
+  , updatePassword :: Maybe Text
+  , updateImage    :: Maybe Text
+  , updateBio      :: Maybe Text
+  } deriving Show
+
+updateForm :: User -> FormParser UpdateFields Text Handler Update'
+updateForm User {..} =
+  subParser #user (Update'
+    <$> optional (field #username (notEmpty >=> uniqueUsernameIfChanged userUsername))
+    <*> optional (field #email (notEmpty >=> uniqueEmailIfChanged userEmail))
+    <*> optional (field #password notEmpty)
+    <*> optional (field' #image)
+    <*> optional (field' #bio))
+
+putUserR :: Handler Value
+putUserR = do
+  Just userId <- maybeAuthId
+  Just user <- runDB $ get userId
+  withForm (updateForm user) $ \Update' {..} -> do
+    let updates =
+          maybeUpdate UserUsername updateUsername $
+          maybeUpdate UserEmail updateEmail $
+          maybeUpdate UserPassword updatePassword $
+          maybeUpdate UserImage updateImage $
+          maybeUpdate UserBio updateBio []
+    updatedUser <- runDB $ updateGet userId updates
+    encodeUser updatedUser
 
 --------------------------------------------------------------------------------
+-- Input validations
+
+validEmail :: Monad m => Text -> ExceptT Text m Text
+validEmail email =
+  if Email.isValid $ encodeUtf8 email
+     then return email
+     else throwError "Invalid email address."
+
+uniqueEmail :: Text -> ExceptT Text Handler Text
+uniqueEmail email = do
+  user <- lift $ runDB $ getBy $ UniqueUserEmail email
+  if isNothing user
+    then return email
+    else throwError "This email address is already being used."
+
+uniqueUsername :: Text -> ExceptT Text Handler Text
+uniqueUsername username = do
+  user <- lift $ runDB $ getBy $ UniqueUsername username
+  if isNothing user
+    then return username
+    else throwError "This username is already being used."
+
+uniqueEmailIfChanged :: Text -> Text -> ExceptT Text Handler Text
+uniqueEmailIfChanged currentEmail newEmail =
+  if newEmail /= currentEmail
+    then uniqueEmail newEmail
+    else return newEmail
+
+uniqueUsernameIfChanged :: Text -> Text -> ExceptT Text Handler Text
+uniqueUsernameIfChanged currentUsername newUsername =
+  if newUsername /= currentUsername
+    then uniqueUsername newUsername
+    else return newUsername
+
+--------------------------------------------------------------------------------
+-- Helpers
 
 defaultUserImage :: Text
 defaultUserImage = "https://static.productionready.io/images/smiley-cyrus.jpg"
@@ -190,6 +170,8 @@ verifyPwd password pwdHash =
 
 unauthorized :: Handler Value
 unauthorized = sendResponseStatus status401 Null
+
+-- | Encode a 'User' with a JWT authentication token.
 
 encodeUser :: User -> Handler Value
 encodeUser User {..} = do
