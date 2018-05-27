@@ -9,8 +9,6 @@ import           Database.Persist
 -- | Update a given field if set.
 
 maybeUpdate :: PersistField typ
-  => EntityField v typ -> Maybe typ -> [Update v] -> [Update v]
-maybeUpdate label mField updates =
-  case mField of
-    Just field -> (label =. field) : updates
-    _          -> updates
+  => EntityField v typ -> Maybe typ -> Maybe (Update v)
+maybeUpdate label =
+  fmap (label =.)

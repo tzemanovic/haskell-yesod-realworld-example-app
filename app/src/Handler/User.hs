@@ -103,11 +103,14 @@ data Update' = Update'
 updateForm :: User -> FormParser UpdateFields Text Handler Update'
 updateForm User {..} =
   subParser #user (Update'
-    <$> optional (field #username (notEmpty >=> uniqueUsernameIfChanged userUsername))
-    <*> optional (field #email (notEmpty >=> uniqueEmailIfChanged userEmail))
+    <$> optional (field #username usernameValidation)
+    <*> optional (field #email emailValidation)
     <*> optional (field #password notEmpty)
     <*> optional (field' #image)
     <*> optional (field' #bio))
+  where
+    usernameValidation = notEmpty >=> uniqueUsernameIfChanged userUsername
+    emailValidation = notEmpty >=> uniqueEmailIfChanged userEmail
 
 putUserR :: Handler Value
 putUserR = do
@@ -115,11 +118,13 @@ putUserR = do
   Just user <- runDB $ get userId
   withForm (updateForm user) $ \Update' {..} -> do
     let updates =
-          maybeUpdate UserUsername updateUsername $
-          maybeUpdate UserEmail updateEmail $
-          maybeUpdate UserPassword updatePassword $
-          maybeUpdate UserImage updateImage $
-          maybeUpdate UserBio updateBio []
+          catMaybes
+            [ maybeUpdate UserUsername updateUsername
+            , maybeUpdate UserEmail updateEmail
+            , maybeUpdate UserPassword updatePassword
+            , maybeUpdate UserImage updateImage
+            , maybeUpdate UserBio updateBio
+            ]
     updatedUser <- runDB $ updateGet userId updates
     encodeUser updatedUser
 
