@@ -46,7 +46,7 @@ spec = withApp $ do
         statusIs 401
 
       it "user can't login with wrong password" $ do
-        insertUser username email password
+        _ <- insertUser username email password
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
@@ -74,7 +74,7 @@ spec = withApp $ do
         statusIs 422
 
       it "user can login with valid credentials" $ do
-        insertUser username email password
+        _ <- insertUser username email password
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
@@ -91,7 +91,7 @@ spec = withApp $ do
     describe "postUsersRegisterR" $ do
 
       it "user can't register with a duplicate username" $ do
-        insertUser username email password
+        _ <- insertUser username email password
         postBody UsersRegisterR $ encode $ object
           [ "user" .= object
             [ "username" .= ("foo" :: Text)
@@ -102,7 +102,7 @@ spec = withApp $ do
         statusIs 422
 
       it "user can't register with an invalid email" $ do
-        insertUser username email password
+        _ <- insertUser username email password
         postBody UsersRegisterR $ encode $ object
           [ "user" .= object
             [ "username" .= username
@@ -113,7 +113,7 @@ spec = withApp $ do
         statusIs 422
 
       it "user can't register with a duplicate email" $ do
-        insertUser username email password
+        _ <- insertUser username email password
         postBody UsersRegisterR $ encode $ object
           [ "user" .= object
             [ "username" .= username
@@ -153,7 +153,7 @@ spec = withApp $ do
         statusIs 403
 
       it "get current user" $ do
-        insertUser username email password
+        _ <- insertUser username email password
         authenticatedRequest username $ do
           setMethod "GET"
           setUrl UserR
@@ -166,8 +166,8 @@ spec = withApp $ do
             otherRawEmail = "taken@bar.com" :: Text
             otherEmail = Email $ CI.mk otherRawEmail
             otherPassword = "something" :: Text
-        insertUser username email password
-        insertUser otherUsername otherEmail otherPassword
+        _ <- insertUser username email password
+        _ <- insertUser otherUsername otherEmail otherPassword
         authenticatedRequest username $ do
           setMethod "PUT"
           setUrl UserR
@@ -181,7 +181,7 @@ spec = withApp $ do
       it "update user" $ do
         let newUsername = "new username" :: Text
             newBio = "In id erat non orci commodo lobortis." :: Text
-        insertUser username email password
+        _ <- insertUser username email password
         authenticatedRequest username $ do
           setMethod "PUT"
           setUrl UserR
