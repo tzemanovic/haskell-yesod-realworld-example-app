@@ -13,7 +13,7 @@ import           ClassyPrelude                 as X hiding (Handler, delete,
                                                      deleteBy)
 import           Data.Aeson                    (FromJSON, Result (..), decode,
                                                 fromJSON)
-import           Database.Persist              as X hiding (get)
+import           Database.Persist.Extended     as X hiding (get)
 import           Database.Persist.Sql          (SqlPersistM, connEscapeName,
                                                 rawExecute, rawSql,
                                                 runSqlPersistMPool, unSingle)
@@ -67,7 +67,7 @@ withApp = before $ do
 
 -- | Insert a user into the DB.
 
-insertUser :: Text -> Text -> Text -> YesodExample App ()
+insertUser :: Text -> Email -> Text -> YesodExample App ()
 insertUser username email password = do
   pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
   _ <- runDB $ insert User
@@ -91,7 +91,7 @@ getJsonResponse =
 -- | Build a request that gets a JWT token for a given username and uses it
 -- to set the request's authentication header.
 
-authenticatedRequest :: Text -> RequestBuilder App () -> YesodExample App () 
+authenticatedRequest :: Text -> RequestBuilder App () -> YesodExample App ()
 authenticatedRequest username reqBuilder = do
   token <- runHandler $ usernameToJwtToken username
   request $ do

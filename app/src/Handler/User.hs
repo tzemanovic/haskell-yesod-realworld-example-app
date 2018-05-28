@@ -18,7 +18,6 @@ import           Database.Persist.Extended
 import           Import                        hiding (Form, FormResult)
 import           Web.Forma.Extra
 
-import qualified Text.Email.Validate           as Email
 import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 
 
@@ -28,14 +27,14 @@ import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 type LoginFields = '[ "user", "email", "password" ]
 
 data Login = Login
-  { loginEmail    :: Text
+  { loginEmail    :: Email
   , loginPassword :: Text
   } deriving Show
 
 loginForm :: Monad m => FormParser LoginFields Text m Login
 loginForm =
   subParser #user (Login
-    <$> field #email notEmpty
+    <$> field #email (notEmpty >=> validEmail)
     <*> field #password notEmpty)
 
 postUsersLoginR :: Handler Value
@@ -58,7 +57,7 @@ type RegisterFields = '[ "user", "username", "email", "password" ]
 
 data Register = Register
   { registerUsername :: Text
-  , registerEmail    :: Text
+  , registerEmail    :: Email
   , registerPassword :: Text
   } deriving Show
 
@@ -94,7 +93,7 @@ type UpdateFields = '[ "user", "username", "email", "password", "image", "bio" ]
 
 data Update' = Update'
   { updateUsername :: Maybe Text
-  , updateEmail    :: Maybe Text
+  , updateEmail    :: Maybe Email
   , updatePassword :: Maybe Text
   , updateImage    :: Maybe Text
   , updateBio      :: Maybe Text
@@ -110,7 +109,7 @@ updateForm User {..} =
     <*> optional (field' #bio))
   where
     usernameValidation = notEmpty >=> uniqueUsernameIfChanged userUsername
-    emailValidation = notEmpty >=> uniqueEmailIfChanged userEmail
+    emailValidation = notEmpty >=> validEmail >=> uniqueEmailIfChanged userEmail
 
 putUserR :: Handler Value
 putUserR = do
@@ -131,13 +130,13 @@ putUserR = do
 --------------------------------------------------------------------------------
 -- Input validations
 
-validEmail :: Monad m => Text -> ExceptT Text m Text
+validEmail :: Monad m => Text -> ExceptT Text m Email
 validEmail email =
-  if Email.isValid $ encodeUtf8 email
-     then return email
-     else throwError "Invalid email address."
+  case mkEmail email of
+     Just e -> return e
+     _      -> throwError "Invalid email address."
 
-uniqueEmail :: Text -> ExceptT Text Handler Text
+uniqueEmail :: Email -> ExceptT Text Handler Email
 uniqueEmail email = do
   user <- lift $ runDB $ getBy $ UniqueUserEmail email
   if isNothing user
@@ -151,7 +150,7 @@ uniqueUsername username = do
     then return username
     else throwError "This username is already being used."
 
-uniqueEmailIfChanged :: Text -> Text -> ExceptT Text Handler Text
+uniqueEmailIfChanged :: Email -> Email -> ExceptT Text Handler Email
 uniqueEmailIfChanged currentEmail newEmail =
   if newEmail /= currentEmail
     then uniqueEmail newEmail

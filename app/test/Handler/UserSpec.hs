@@ -5,6 +5,8 @@
 module Handler.UserSpec (spec) where
 
 import           Data.Aeson
+import qualified Data.CaseInsensitive                  as CI
+import           Database.Persist.Types.Email.Internal (Email (..))
 import           TestImport
 
 data User' = User'
@@ -28,7 +30,8 @@ instance FromJSON User' where
 spec :: Spec
 spec = withApp $ do
     let username = "test"
-        email = "test@foo.com"
+        rawEmail = "test@foo.com"
+        email = Email $ CI.mk rawEmail
         password = "secret"
 
     describe "postUsersLoginR" $ do
@@ -81,7 +84,7 @@ spec = withApp $ do
 
         statusIs 200
         User' {..} <- getJsonResponse
-        assertEq "response email matches" loginEmail email
+        assertEq "response email matches" loginEmail rawEmail
         assertEq "response username matches" loginUsername username
         assertNotEq "response token not empty" loginToken ""
 
@@ -131,11 +134,11 @@ spec = withApp $ do
 
         statusIs 200
         User' {..} <- getJsonResponse
-        assertEq "response email matches" loginEmail email
+        assertEq "response email matches" loginEmail rawEmail
         assertEq "response username matches" loginUsername username
         assertNotEq "response token not empty" loginToken ""
 
-        mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
+        mUser <- runDB $ getBy $ UniqueUserEmail email
         case mUser of
           Just (Entity _ User {..}) -> do
             assertEq "DB email matches" userEmail email
@@ -160,7 +163,8 @@ spec = withApp $ do
 
       it "can't update user with a duplicate email" $ do
         let otherUsername = "taken" :: Text
-            otherEmail = "taken@bar.com" :: Text
+            otherRawEmail = "taken@bar.com" :: Text
+            otherEmail = Email $ CI.mk otherRawEmail
             otherPassword = "something" :: Text
         insertUser username email password
         insertUser otherUsername otherEmail otherPassword

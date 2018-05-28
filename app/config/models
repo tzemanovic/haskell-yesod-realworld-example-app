@@ -2,7 +2,7 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 User
-    email Text
+    email Email
     username Text
     password Text
     bio Text

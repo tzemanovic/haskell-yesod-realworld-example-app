@@ -1,9 +1,11 @@
 module Database.Persist.Extended
   ( module Database.Persist
+  , module Database.Persist.Types.Email
   , maybeUpdate
   ) where
 
 import           Database.Persist
+import           Database.Persist.Types.Email
 
 
 -- | Update a given field if set.
