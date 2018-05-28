@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c7fc72f3aa93c60667192c5f3319e183cc9daf04541133e588889e0fcbbd6b55
+-- hash: 02baa69ab1f55e5d56f3fadb90ba85768a025efa758f19caf5072f8b0063ebab
 
 name:           app
 version:        0.0.0
@@ -30,6 +30,7 @@ library
       Handler.Common
       Handler.Home
       Handler.Profile
+      Handler.Profiles
       Handler.User
       Import
       Import.NoFoundation
@@ -211,6 +212,7 @@ test-suite test
       Handler.CommentSpec
       Handler.CommonSpec
       Handler.HomeSpec
+      Handler.ProfilesSpec
       Handler.UserSpec
       TestImport
       Paths_app

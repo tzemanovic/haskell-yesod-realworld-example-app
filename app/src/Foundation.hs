@@ -156,13 +156,13 @@ instance Yesod App where
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
     isAuthorized (StaticR _) _ = return Authorized
-    -- conduit
-    isAuthorized UsersRegisterR _ = return Authorized
-    isAuthorized UsersLoginR _ = return Authorized
-
     isAuthorized ProfileR _ = isAuthenticated
     -- conduit
     isAuthorized UserR _ = isAuthenticated
+    isAuthorized UsersRegisterR _ = return Authorized
+    isAuthorized UsersLoginR _ = return Authorized
+    isAuthorized (ProfilesR _) _ = return Authorized
+
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -244,7 +244,7 @@ tokenToUserId token = do
 
 getUserId :: Text -> Handler (Maybe UserId)
 getUserId username = do
-  mUser <- runDB $ getBy $ UniqueUsername username
+  mUser <- runDB $ getBy $ UniqueUserUsername username
   case mUser of
     Just (Entity userId _) -> return $ Just userId
     _ ->                      return Nothing

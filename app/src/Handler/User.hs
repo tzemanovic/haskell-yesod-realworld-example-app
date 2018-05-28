@@ -145,7 +145,7 @@ uniqueEmail email = do
 
 uniqueUsername :: Text -> ExceptT Text Handler Text
 uniqueUsername username = do
-  user <- lift $ runDB $ getBy $ UniqueUsername username
+  user <- lift $ runDB $ getBy $ UniqueUserUsername username
   if isNothing user
     then return username
     else throwError "This username is already being used."

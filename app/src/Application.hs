@@ -22,7 +22,8 @@ module Application
 
 import Control.Monad.Logger                 (liftLoc, runLoggingT)
 import Database.Persist.Sqlite              (createSqlitePool, runSqlPool,
-                                             sqlDatabase, sqlPoolSize, runMigration)
+                                             sqlDatabase, sqlPoolSize, runMigration,
+                                             runMigrationUnsafe)
 import Import
 import Language.Haskell.TH.Syntax           (qLocation)
 import Network.Wai (Middleware)
@@ -45,7 +46,9 @@ import Handler.Common
 import Handler.Home
 import Handler.Comment
 import Handler.Profile
+-- TODO remove above
 import Handler.User
+import Handler.Profiles
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -86,8 +89,9 @@ makeFoundation appSettings = do
 
     -- Perform database migration using our application's logging settings.
     flip runLoggingT logFunc $ flip runSqlPool pool $ do
+      -- runMigrationUnsafe migrateAll
       runMigration migrateAll
-      -- deleteBy $ UniqueUserEmail "tzemanovic@gmail.com"
+      -- deleteBy $ UniqueUserUsername "tzemanovic"
       -- tzPwd <- lift $ makePassword "test" 14
       -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" ""
 

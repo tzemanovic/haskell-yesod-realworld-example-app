@@ -67,17 +67,17 @@ withApp = before $ do
 
 -- | Insert a user into the DB.
 
-insertUser :: Text -> Email -> Text -> YesodExample App ()
+insertUser :: Text -> Email -> Text -> YesodExample App (Key User)
 insertUser username email password = do
   pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
-  _ <- runDB $ insert User
+  userId <- runDB $ insert User
         { userEmail = email
         , userUsername = username
         , userPassword = decodeUtf8 pwdHash
         , userBio = ""
         , userImage = ""
         }
-  return ()
+  return userId
 
 -- | Get response from JSON body.
 

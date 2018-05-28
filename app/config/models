@@ -7,8 +7,14 @@ User
     password Text
     bio Text
     image Text
-    UniqueUsername username
+    UniqueUserUsername username
     UniqueUserEmail email
+    deriving Show Typeable
+
+UserFollower
+    user UserId
+    follower UserId
+    UniqueUserFollower user follower
     deriving Show Typeable
 
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.

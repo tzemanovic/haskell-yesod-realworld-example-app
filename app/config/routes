@@ -17,3 +17,6 @@
 /api/user UserR GET PUT
 /api/users UsersRegisterR POST
 /api/users/login UsersLoginR POST
+
+/api/profiles/#Text ProfilesR GET
+-- /api/profiles/#Text/follow FollowR POST DELETE
