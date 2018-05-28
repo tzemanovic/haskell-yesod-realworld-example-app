@@ -18,7 +18,7 @@ spec = withApp $ do
 
     describe "getProfilesR" $ do
 
-      it "trying to find non-existing user profile fails gracefully" $ do
+      it "trying to get non-existing user profile fails gracefully" $ do
         get $ ProfilesR username
         statusIs 404
 
@@ -37,8 +37,8 @@ spec = withApp $ do
           ]
 
       it "get user profile that indicates following" $ do
-        let otherUsername = "taken" :: Text
-            otherRawEmail = "taken@bar.com" :: Text
+        let otherUsername = "lambda" :: Text
+            otherRawEmail = "lambda@bar.com" :: Text
             otherEmail = Email $ CI.mk otherRawEmail
             otherPassword = "something" :: Text
         userId <- insertUser username email password
@@ -59,5 +59,77 @@ spec = withApp $ do
               , "bio" .= ("" :: Text)
               , "image" .= ("" :: Text)
               , "following" .= True
+              ]
+          ]
+
+    describe "postFollowR" $ do
+
+      it "trying to follow non-existing user profile fails gracefully" $ do
+        _ <- insertUser username email password
+        authenticatedRequest username $ do
+          setMethod "POST"
+          setUrl $ FollowR "lambda"
+        statusIs 404
+
+      it "following is applied" $ do
+        let otherUsername = "lambda" :: Text
+            otherRawEmail = "lambda@bar.com" :: Text
+            otherEmail = Email $ CI.mk otherRawEmail
+            otherPassword = "something" :: Text
+        -- _ <- insertUser username email password
+        -- _ <- insertUser otherUsername otherEmail otherPassword
+        userId <- insertUser username email password
+        otherUserId <- insertUser otherUsername otherEmail otherPassword
+        _ <- runDB $ insert UserFollower
+              { userFollowerUser = otherUserId
+              , userFollowerFollower = userId
+              }
+        authenticatedRequest username $ do
+          setMethod "POST"
+          setUrl $ FollowR otherUsername
+
+        statusIs 200
+        response <- getJsonResponse
+        assertEq "response contains profile data" response $ object
+          [ "profile" .= object
+              [ "username" .= otherUsername
+              , "bio" .= ("" :: Text)
+              , "image" .= ("" :: Text)
+              , "following" .= True
+              ]
+          ]
+
+    describe "deleteFollowR" $ do
+
+      it "trying to unfollow non-existing user profile fails gracefully" $ do
+        _ <- insertUser username email password
+        authenticatedRequest username $ do
+          setMethod "DELETE"
+          setUrl $ FollowR "lambda"
+        statusIs 404
+
+      it "unfollowing is applied" $ do
+        let otherUsername = "lambda" :: Text
+            otherRawEmail = "lambda@bar.com" :: Text
+            otherEmail = Email $ CI.mk otherRawEmail
+            otherPassword = "something" :: Text
+        userId <- insertUser username email password
+        otherUserId <- insertUser otherUsername otherEmail otherPassword
+        _ <- runDB $ insert UserFollower
+              { userFollowerUser = otherUserId
+              , userFollowerFollower = userId
+              }
+        authenticatedRequest username $ do
+          setMethod "DELETE"
+          setUrl $ FollowR otherUsername
+
+        statusIs 200
+        response <- getJsonResponse
+        assertEq "response contains profile data" response $ object
+          [ "profile" .= object
+              [ "username" .= otherUsername
+              , "bio" .= ("" :: Text)
+              , "image" .= ("" :: Text)
+              , "following" .= False
               ]
           ]

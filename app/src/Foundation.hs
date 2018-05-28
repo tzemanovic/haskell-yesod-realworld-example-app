@@ -162,6 +162,7 @@ instance Yesod App where
     isAuthorized UsersRegisterR _ = return Authorized
     isAuthorized UsersLoginR _ = return Authorized
     isAuthorized (ProfilesR _) _ = return Authorized
+    isAuthorized (FollowR _) _ = isAuthenticated
 
 
     -- This function creates static content files in the static folder

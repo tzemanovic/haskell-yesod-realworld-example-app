@@ -19,4 +19,4 @@
 /api/users/login UsersLoginR POST
 
 /api/profiles/#Text ProfilesR GET
--- /api/profiles/#Text/follow FollowR POST DELETE
+/api/profiles/#Text/follow FollowR POST DELETE
