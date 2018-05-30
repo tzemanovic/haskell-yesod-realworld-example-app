@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 02baa69ab1f55e5d56f3fadb90ba85768a025efa758f19caf5072f8b0063ebab
+-- hash: d38a3923fd3503988720d573b9b0da8d6eb6e81087ce6a280a72383e7d49712c
 
 name:           app
 version:        0.0.0
@@ -26,6 +26,7 @@ library
       Database.Persist.Types.Email
       Database.Persist.Types.Email.Internal
       Foundation
+      Handler.Articles
       Handler.Comment
       Handler.Common
       Handler.Home
@@ -53,6 +54,7 @@ library
     , data-default
     , directory >=1.1 && <1.4
     , email-validate
+    , esqueleto
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
@@ -113,6 +115,7 @@ executable app
     , data-default
     , directory >=1.1 && <1.4
     , email-validate
+    , esqueleto
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store
@@ -173,6 +176,7 @@ test-suite test
     , data-default
     , directory >=1.1 && <1.4
     , email-validate
+    , esqueleto
     , fast-logger >=2.2 && <2.5
     , file-embed
     , foreign-store

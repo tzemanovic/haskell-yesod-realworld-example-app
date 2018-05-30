@@ -6,8 +6,8 @@ module Handler.Profiles
   ( getProfilesR
   , postFollowR
   , deleteFollowR
-  )
-  where
+  , encodeProfile
+  ) where
 
 import           Data.Aeson
 import           Import
@@ -20,16 +20,11 @@ getProfilesR :: Text -> Handler Value
 getProfilesR username = do
   (Entity userId user) <- runDB $ getBy404 $ UniqueUserUsername username
   mCurrentUserId <- maybeAuthId
-  following <-
+  encodeProfile user <$>
     case mCurrentUserId of
-
       Just currentUserId ->
         isJust <$> runDB (getBy $ UniqueUserFollower userId currentUserId)
-
-      _ ->
-        return False
-
-  return $ encodeProfile user following
+      _ -> return False
 
 encodeProfile :: User -> Bool -> Value
 encodeProfile User {..} following =
@@ -53,9 +48,8 @@ postFollowR username = do
   conflict <- runDB $ checkUnique follower
   case conflict of
     Just _ -> return ()
-    _ -> runDB $ insert_ follower
+    _      -> runDB $ insert_ follower
   getProfilesR username
-  
 
 --------------------------------------------------------------------------------
 -- Unfollow User

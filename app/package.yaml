@@ -52,6 +52,7 @@ dependencies:
 - forma
 - mtl
 - http-types
+- esqueleto
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

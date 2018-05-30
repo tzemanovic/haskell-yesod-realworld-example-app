@@ -17,6 +17,33 @@ UserFollower
     UniqueUserFollower user follower
     deriving Show Typeable
 
+Article
+    author UserId
+    title Text
+    slug Text
+    description Text
+    body Text
+    createdAt UTCTime
+    updatedAt UTCTime
+    deriving Show Typeable
+
+Tag
+    name Text
+    UniqueTagName name
+    deriving Show Typeable
+
+ArticleFavorite
+    article ArticleId
+    user UserId
+    UniqueArticleFavorite article user
+    deriving Show Typeable
+
+ArticleTag
+    article ArticleId
+    tag TagId
+    UniqueArticleTag article tag
+    deriving Show Typeable
+
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
     message Text
     userId UserId Maybe
