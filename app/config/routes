@@ -15,6 +15,7 @@
 
 -- Conduit
 /api/articles ArticlesR GET
+/api/articles/feed ArticlesFeedR GET
 
 /api/profiles/#Text ProfilesR GET
 /api/profiles/#Text/follow FollowR POST DELETE

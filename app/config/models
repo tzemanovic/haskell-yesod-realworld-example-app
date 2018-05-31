@@ -25,6 +25,7 @@ Article
     body Text
     createdAt UTCTime
     updatedAt UTCTime
+    UniqueArticleSlug slug
     deriving Show Typeable
 
 Tag
