@@ -22,25 +22,19 @@ import           Import             hiding ((==.))
 
 getArticlesR :: Handler Value
 getArticlesR = do
-  mCurrentUserId <- maybeAuthId
   mTag <- lookupGetParam "tag"
   mFilterAuthor <- lookupGetParam "author"
   mFilterFavoritedBy <- lookupGetParam "favorited"
-  mLimit <- lookupGetParam "limit"
-  mOffset <- lookupGetParam "offset"
 
   let
-    limit = decimalWithDefault mLimit 20
-    offset = decimalWithDefault mOffset 0
-
-    hasTag article =
+    filterTag article =
       case mTag of
-        Just filterTag ->
+        Just aTag ->
           E.exists $
           E.from $ \(tag `E.InnerJoin` articleTag) -> do
             E.on $ tag ^. TagId ==. articleTag ^. ArticleTagTag
             E.where_ $ articleTag ^. ArticleTagArticle ==. article ^. ArticleId
-            E.where_ $ tag ^. TagName ==. E.val filterTag
+            E.where_ $ tag ^. TagName ==. E.val aTag
         _ -> E.val True
 
     filterAuthor author =
@@ -57,42 +51,34 @@ getArticlesR = do
             E.where_ $ E.val favoritedBy ==. user ^. UserUsername
         _ -> E.val True
 
-    articleFavorites article =
-      E.from $ \favorite -> do
-        E.where_ $ favorite ^. ArticleFavoriteArticle ==. article ^. ArticleId
-        return E.countRows
+  articles <- getArticles $ \article author _ -> do
+    E.where_ $ filterTag article
+    E.where_ $ filterAuthor author
+    E.where_ filterFavoritedBy
 
-  articles <-
-    runDB $
-    E.select $
-    E.from $ \(article
-               `E.InnerJoin` author
-               `E.LeftOuterJoin` mFollower
-               `E.LeftOuterJoin` mFavourite) -> do
-      E.on $ article ^. ArticleAuthor ==. author ^. UserId
-      E.on $ mFollower ?. UserFollowerUser ==. E.just (author ^. UserId)
-      E.on $ mFollower ?. UserFollowerFollower ==. E.val mCurrentUserId
-      E.on $ mFavourite ?. ArticleFavoriteUser ==. E.val mCurrentUserId
-      E.limit limit
-      E.offset offset
-      E.where_ $ hasTag article
-      E.where_ $ filterAuthor author
-      E.where_ filterFavoritedBy
-      E.orderBy [ E.desc $ article ^. ArticleCreatedAt ]
-
-      let following = E.not_ $ E.isNothing $ mFollower ?. UserFollowerId
-          favorited = E.not_ $ E.isNothing $ mFavourite ?. ArticleFavoriteId
-          favoritesCount = E.sub_select $ articleFavorites article
-      return (article, author, following, favorited, favoritesCount)
-
-  articlesWithTags <- mapM addArticleTagList articles
-  return $ object ["articles" .= articlesWithTags]
+  return $ object ["articles" .= articles]
 
 --------------------------------------------------------------------------------
 -- Article feed
 
 getArticlesFeedR :: Handler Value
 getArticlesFeedR = do
+  articles <- getArticles $ \_ _ following ->
+    E.where_ following
+
+  return $ object ["articles" .= articles]
+
+--------------------------------------------------------------------------------
+-- Helpers
+
+getArticles ::
+  (E.SqlExpr (Entity Article)
+    -> E.SqlExpr (Entity User)
+    -> E.SqlExpr (E.Value Bool)
+    -> E.SqlQuery ()
+  )
+  -> HandlerT App IO [Value]
+getArticles extraQuery = do
   mCurrentUserId <- maybeAuthId
   mLimit <- lookupGetParam "limit"
   mOffset <- lookupGetParam "offset"
@@ -113,37 +99,22 @@ getArticlesFeedR = do
                `E.InnerJoin` author
                `E.LeftOuterJoin` mFollower
                `E.LeftOuterJoin` mFavourite) -> do
+      let following = E.not_ $ E.isNothing $ mFollower ?. UserFollowerId
+          favorited = E.not_ $ E.isNothing $ mFavourite ?. ArticleFavoriteId
+          favoritesCount = E.sub_select $ articleFavorites article
+
       E.on $ article ^. ArticleAuthor ==. author ^. UserId
       E.on $ mFollower ?. UserFollowerUser ==. E.just (author ^. UserId)
       E.on $ mFollower ?. UserFollowerFollower ==. E.val mCurrentUserId
       E.on $ mFavourite ?. ArticleFavoriteUser ==. E.val mCurrentUserId
       E.limit limit
       E.offset offset
-      E.where_ $ E.not_ $ E.isNothing $ mFollower ?. UserFollowerId
       E.orderBy [ E.desc $ article ^. ArticleCreatedAt ]
+      extraQuery article author following
 
-      let following = E.not_ $ E.isNothing $ mFollower ?. UserFollowerId
-          favorited = E.not_ $ E.isNothing $ mFavourite ?. ArticleFavoriteId
-          favoritesCount = E.sub_select $ articleFavorites article
       return (article, author, following, favorited, favoritesCount)
 
-  articlesWithTags <- mapM addArticleTagList articles
-  return $ object ["articles" .= articlesWithTags]
-
---------------------------------------------------------------------------------
--- Helpers
-
-slug :: Text -> Text
-slug = toLower . T.map h
-  where
-    h ' ' = '-'
-    h c   = c
-
-decimalWithDefault :: Integral p => Maybe Text -> p -> p
-decimalWithDefault x default' =
-        case decimal <$> x of
-          Just (Right (l, _)) -> l
-          _                   -> default'
+  mapM addArticleTagList articles
 
 addArticleTagList ::
      ( Entity Article, Entity User, E.Value Bool
@@ -173,3 +144,15 @@ addArticleTagList
       , "favoritesCount" .= favoritesCount
       , "author" .= encodeProfile author following
       ]
+
+decimalWithDefault :: Integral p => Maybe Text -> p -> p
+decimalWithDefault x default' =
+        case decimal <$> x of
+          Just (Right (l, _)) -> l
+          _                   -> default'
+
+slugify :: Text -> Text
+slugify = toLower . T.map h
+  where
+    h ' ' = '-'
+    h c   = c

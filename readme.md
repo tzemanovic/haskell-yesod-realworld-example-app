@@ -1,5 +1,7 @@
 # ![RealWorld Example App](logo.png) (WIP)
 
+[![Built with Spacemacs](https://cdn.rawgit.com/syl20bnr/spacemacs/442d025779da2f62fc86c2082703697714db6514/assets/spacemacs-badge.svg)](http://spacemacs.org) [![Build Status](https://travis-ci.org/tzemanovic/haskell-yesod-realworld-example-app.svg?branch=dev)](https://travis-ci.org/tzemanovic/haskell-yesod-realworld-example-app)
+
 > ### Haskell/Yesod codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
 
