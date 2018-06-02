@@ -48,7 +48,7 @@ postUsersLoginR =
         where validPwd = verifyPwd loginPassword pwdHash
 
       _ ->
-        unauthorized
+        notAuthenticated
 
 --------------------------------------------------------------------------------
 -- Register new user
@@ -171,9 +171,6 @@ defaultUserImage = "https://static.productionready.io/images/smiley-cyrus.jpg"
 verifyPwd :: Text -> Text -> Bool
 verifyPwd password pwdHash =
   verifyPassword (encodeUtf8 password) $ encodeUtf8 pwdHash
-
-unauthorized :: Handler Value
-unauthorized = sendResponseStatus status401 Null
 
 -- | Encode a 'User' with a JWT authentication token.
 

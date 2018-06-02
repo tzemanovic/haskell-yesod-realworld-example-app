@@ -16,6 +16,9 @@
 -- Conduit
 /api/articles ArticlesR GET
 /api/articles/feed ArticlesFeedR GET
+-- We have to start with exclamation mark to disable overlap checking.
+-- This is safe, because article's slug can never be equal to "feed".
+!/api/articles/#Text ArticleR GET
 
 /api/profiles/#Text ProfilesR GET
 /api/profiles/#Text/follow FollowR POST DELETE

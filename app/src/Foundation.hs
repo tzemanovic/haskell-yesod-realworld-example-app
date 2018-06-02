@@ -160,6 +160,7 @@ instance Yesod App where
     -- conduit
     isAuthorized ArticlesR _ = return Authorized
     isAuthorized ArticlesFeedR _ = isAuthenticated
+    isAuthorized (ArticleR _) _ = return Authorized
     isAuthorized (FollowR _) _ = isAuthenticated
     isAuthorized (ProfilesR _) _ = return Authorized
     isAuthorized UserR _ = isAuthenticated

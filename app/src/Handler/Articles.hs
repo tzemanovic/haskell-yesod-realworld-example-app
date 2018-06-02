@@ -5,6 +5,7 @@
 module Handler.Articles
   ( getArticlesR
   , getArticlesFeedR
+  , getArticleR
   )
   where
 
@@ -67,6 +68,19 @@ getArticlesFeedR = do
     E.where_ following
 
   return $ object ["articles" .= articles]
+
+--------------------------------------------------------------------------------
+-- Get article
+
+getArticleR :: Text -> Handler Value
+getArticleR slug = do
+  mCurrentUserId <- maybeAuthId
+  articles <- getArticles $ \article _ _ ->
+    E.where_ $ article ^. ArticleSlug ==. E.val slug
+
+  case articles of
+    []          -> notFound
+    article : _ -> return $ object ["article" .= article]
 
 --------------------------------------------------------------------------------
 -- Helpers
