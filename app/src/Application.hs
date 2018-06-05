@@ -93,7 +93,7 @@ makeFoundation appSettings = do
       -- runMigrationUnsafe migrateAll
       runMigration migrateAll
       -- deleteBy $ UniqueUserUsername "tzemanovic"
-      -- tzPwd <- lift $ makePassword "test" 14
+      -- tzPwd <- liftIO $ makePassword "test" 14
       -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" ""
 
     -- Return the foundation

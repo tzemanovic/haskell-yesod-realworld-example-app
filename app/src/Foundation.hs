@@ -158,6 +158,7 @@ instance Yesod App where
     isAuthorized (StaticR _) _ = return Authorized
     isAuthorized ProfileR _ = isAuthenticated
     -- conduit
+    isAuthorized ArticlesR True = isAuthenticated
     isAuthorized ArticlesR _ = return Authorized
     isAuthorized ArticlesFeedR _ = isAuthenticated
     isAuthorized (ArticleR _) _ = return Authorized

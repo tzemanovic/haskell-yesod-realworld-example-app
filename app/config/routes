@@ -14,7 +14,7 @@
 /profile ProfileR GET
 
 -- Conduit
-/api/articles ArticlesR GET
+/api/articles ArticlesR GET POST
 /api/articles/feed ArticlesFeedR GET
 -- We have to start with exclamation mark to disable overlap checking.
 -- This is safe, because article's slug can never be equal to "feed".

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d38a3923fd3503988720d573b9b0da8d6eb6e81087ce6a280a72383e7d49712c
+-- hash: e0c1d71809797ba9287c37bae79f4c0f04390ec54df1448e7a54aa93bf785939
 
 name:           app
 version:        0.0.0
@@ -69,6 +69,7 @@ library
     , persistent >=2.0 && <2.8
     , persistent-sqlite >=2.6.2 && <2.8
     , persistent-template >=2.0 && <2.8
+    , random
     , safe
     , shakespeare >=2.0 && <2.1
     , template-haskell
@@ -130,6 +131,7 @@ executable app
     , persistent >=2.0 && <2.8
     , persistent-sqlite >=2.6.2 && <2.8
     , persistent-template >=2.0 && <2.8
+    , random
     , safe
     , shakespeare >=2.0 && <2.1
     , template-haskell
@@ -193,6 +195,7 @@ test-suite test
     , persistent >=2.0 && <2.8
     , persistent-sqlite >=2.6.2 && <2.8
     , persistent-template >=2.0 && <2.8
+    , random
     , safe
     , shakespeare >=2.0 && <2.1
     , template-haskell

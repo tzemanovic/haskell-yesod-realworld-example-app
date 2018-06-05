@@ -71,7 +71,7 @@ registerForm =
 postUsersRegisterR :: Handler Value
 postUsersRegisterR =
   withForm registerForm $ \Register {..} -> do
-    pwdHash <- lift $ makePassword (encodeUtf8 registerPassword) 14
+    pwdHash <- liftIO $ makePassword (encodeUtf8 registerPassword) 14
     let user = User registerEmail registerUsername (decodeUtf8 pwdHash) ""
                     defaultUserImage
     _ <- runDB $ insert user

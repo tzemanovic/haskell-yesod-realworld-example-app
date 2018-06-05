@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedLabels  #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 
@@ -6,16 +8,20 @@ module Handler.Articles
   ( getArticlesR
   , getArticlesFeedR
   , getArticleR
+  , postArticlesR
   )
   where
 
 import           Data.Aeson
+import           Data.List          ((!!))
 import qualified Data.Text          as T
 import           Data.Text.Read     (decimal)
 import           Database.Esqueleto ((==.), (?.), (^.))
 import qualified Database.Esqueleto as E
 import           Handler.Profiles   (encodeProfile)
 import           Import             hiding ((==.))
+import           System.Random      (RandomGen, newStdGen, randomRs)
+import           Web.Forma.Extra
 
 
 --------------------------------------------------------------------------------
@@ -74,13 +80,74 @@ getArticlesFeedR = do
 
 getArticleR :: Text -> Handler Value
 getArticleR slug = do
-  mCurrentUserId <- maybeAuthId
   articles <- getArticles $ \article _ _ ->
     E.where_ $ article ^. ArticleSlug ==. E.val slug
 
   case articles of
     []          -> notFound
     article : _ -> return $ object ["article" .= article]
+
+--------------------------------------------------------------------------------
+-- Create article
+
+type ArticleFields = '[ "article", "title", "description", "body", "tagList" ]
+
+data CreateArticle = CreateArticle
+  { createArticleTitle       :: Text
+  , createArticleDescription :: Text
+  , createArticleBody        :: Text
+  , createArticleTagList     :: Maybe [Text]
+  } deriving Show
+
+createArticleForm :: FormParser ArticleFields Text Handler CreateArticle
+createArticleForm =
+  subParser #article (CreateArticle
+    <$> field #title notEmpty
+    <*> field #description notEmpty
+    <*> field #body notEmpty
+    <*> optional (field' #tagList))
+
+postArticlesR :: Handler Value
+postArticlesR = do
+  Just userId <- maybeAuthId
+  withForm createArticleForm $ \CreateArticle {..} -> do
+    now <- liftIO getCurrentTime
+    unique <- liftIO $ alphaNum uniqueCharsLength
+    let slug = take (maxSlugLength - uniqueCharsLength - 1) $
+               slugify createArticleTitle
+        uniqueSlug = slug <> (T.pack $ "-" ++ unique)
+        createdArticle =
+          Article
+            userId
+            createArticleTitle
+            uniqueSlug
+            createArticleDescription
+            createArticleBody
+            now
+            now
+
+    articleId <- runDB $ insert createdArticle
+
+    _ <-
+      forM_ createArticleTagList $
+      flip forM_ $ \tag -> do
+        mTag <- runDB $ getBy $ UniqueTagName tag
+        tagId <- case mTag of
+            Just (Entity tagId _) -> return tagId
+            _                     -> runDB $ insert $ Tag tag
+        _ <- runDB $ insert $ ArticleTag articleId tagId
+        return ()
+
+    articles <- getArticles $ \article _ _ ->
+      E.where_ $ article ^. ArticleId ==. E.val articleId
+
+    case articles of
+      []          -> notFound
+      article : _ -> return $ object ["article" .= article]
+
+  where
+    maxSlugLength = 255
+    uniqueCharsLength = 6
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -170,3 +237,14 @@ slugify = toLower . T.map h
   where
     h ' ' = '-'
     h c   = c
+
+alphaNum :: Int -> IO String
+alphaNum n = do
+  gen <- newStdGen
+  return $ take n $ randomAlphaNum gen
+
+randomAlphaNum :: RandomGen g => g -> String
+randomAlphaNum = randomEl (['0'..'9'] ++ ['a'..'z'])
+
+randomEl :: RandomGen g => [a] -> g -> [a]
+randomEl xs g = (xs !!) <$> randomRs (0, length xs - 1) g
