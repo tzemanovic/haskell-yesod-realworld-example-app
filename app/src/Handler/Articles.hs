@@ -9,18 +9,20 @@ module Handler.Articles
   , getArticlesFeedR
   , getArticleR
   , postArticlesR
+  , putArticleR
   )
   where
 
 import           Data.Aeson
-import           Data.List          ((!!))
-import qualified Data.Text          as T
-import           Data.Text.Read     (decimal)
-import           Database.Esqueleto ((==.), (?.), (^.))
-import qualified Database.Esqueleto as E
-import           Handler.Profiles   (encodeProfile)
-import           Import             hiding ((==.))
-import           System.Random      (RandomGen, newStdGen, randomRs)
+import           Data.List                 ((!!))
+import qualified Data.Text                 as T
+import           Data.Text.Read            (decimal)
+import           Database.Esqueleto        ((==.), (?.), (^.))
+import qualified Database.Esqueleto        as E
+import           Database.Persist.Extended (maybeUpdate)
+import           Handler.Profiles          (encodeProfile)
+import           Import                    hiding ((==.))
+import           System.Random             (RandomGen, newStdGen, randomRs)
 import           Web.Forma.Extra
 
 
@@ -80,12 +82,11 @@ getArticlesFeedR = do
 
 getArticleR :: Text -> Handler Value
 getArticleR slug = do
-  articles <- getArticles $ \article _ _ ->
-    E.where_ $ article ^. ArticleSlug ==. E.val slug
+  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
 
-  case articles of
-    []          -> notFound
-    article : _ -> return $ object ["article" .= article]
+  case mArticle of
+    Just (Entity articleId _) -> encodeArticle articleId
+    _            -> notFound
 
 --------------------------------------------------------------------------------
 -- Create article
@@ -112,15 +113,12 @@ postArticlesR = do
   Just userId <- maybeAuthId
   withForm createArticleForm $ \CreateArticle {..} -> do
     now <- liftIO getCurrentTime
-    unique <- liftIO $ alphaNum uniqueCharsLength
-    let slug = take (maxSlugLength - uniqueCharsLength - 1) $
-               slugify createArticleTitle
-        uniqueSlug = slug <> (T.pack $ "-" ++ unique)
-        createdArticle =
+    slug <- liftIO $ toSlug createArticleTitle
+    let createdArticle =
           Article
             userId
             createArticleTitle
-            uniqueSlug
+            slug
             createArticleDescription
             createArticleBody
             now
@@ -130,7 +128,7 @@ postArticlesR = do
 
     _ <-
       forM_ createArticleTagList $
-      flip forM_ $ \tag -> do
+      mapM_ $ \tag -> do
         mTag <- runDB $ getBy $ UniqueTagName tag
         tagId <- case mTag of
             Just (Entity tagId _) -> return tagId
@@ -145,12 +143,69 @@ postArticlesR = do
       []          -> notFound
       article : _ -> return $ object ["article" .= article]
 
-  where
-    maxSlugLength = 255
-    uniqueCharsLength = 6
+--------------------------------------------------------------------------------
+-- Update article
+
+data UpdateArticle = UpdateArticle
+  { updateArticleTitle       :: Maybe Text
+  , updateArticleDescription :: Maybe Text
+  , updateArticleBody        :: Maybe Text
+  } deriving Show
+
+updateArticleForm :: FormParser ArticleFields Text Handler UpdateArticle
+updateArticleForm =
+  subParser #article (UpdateArticle
+    <$> optional (field #title notEmpty)
+    <*> optional (field #description notEmpty)
+    <*> optional (field #body notEmpty))
+
+putArticleR :: Text -> Handler Value
+putArticleR slug = do
+  Just userId <- maybeAuthId
+  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+
+  case mArticle of
+
+    Just article@(Entity _ Article {..}) ->
+      if articleAuthor /= userId
+        then permissionDenied "Unauthorized"
+        else updateArticle article
+
+    _  ->
+      notFound
+
+updateArticle :: Entity Article -> Handler Value
+updateArticle (Entity articleId Article {..}) =
+  withForm updateArticleForm $ \UpdateArticle {..} -> do
+    updateSlug <-
+      case updateArticleTitle of
+
+        Just updateTitle | updateTitle /= articleTitle ->
+          Just <$> liftIO (toSlug updateTitle)
+
+        _ ->
+          return Nothing
+
+    let updates =
+          catMaybes
+            [ maybeUpdate ArticleTitle updateArticleTitle
+            , maybeUpdate ArticleSlug updateSlug
+            , maybeUpdate ArticleDescription updateArticleDescription
+            , maybeUpdate ArticleBody updateArticleBody
+            ]
+    runDB $ update articleId updates
+    encodeArticle articleId
 
 --------------------------------------------------------------------------------
 -- Helpers
+
+encodeArticle :: Key Article -> Handler Value
+encodeArticle articleId = do
+  articles <- getArticles $ \article _ _ ->
+    E.where_ $ article ^. ArticleId ==. E.val articleId
+  case articles of
+    [] -> notFound
+    article : _ -> return $ object ["article" .= article]
 
 getArticles ::
   (E.SqlExpr (Entity Article)
@@ -232,19 +287,30 @@ decimalWithDefault x default' =
           Just (Right (l, _)) -> l
           _                   -> default'
 
-slugify :: Text -> Text
-slugify = toLower . T.map h
+toSlug :: Text -> IO Text
+toSlug text = do
+  unique <- liftIO $ alphaNum randomCharsLength
+  let slug = toSlug' text
+  return $ slug <> T.pack ("-" ++ unique)
+
+toSlug' :: Text -> Text
+toSlug' = take (maxSlugLength - randomCharsLength - 1) . toLower . T.map h
   where
     h ' ' = '-'
     h c   = c
 
+maxSlugLength :: Int
+maxSlugLength = 255
+
+randomCharsLength :: Int
+randomCharsLength = 6
+
 alphaNum :: Int -> IO String
-alphaNum n = do
-  gen <- newStdGen
-  return $ take n $ randomAlphaNum gen
+alphaNum n = take n . randomAlphaNum <$> newStdGen
 
 randomAlphaNum :: RandomGen g => g -> String
 randomAlphaNum = randomEl (['0'..'9'] ++ ['a'..'z'])
 
 randomEl :: RandomGen g => [a] -> g -> [a]
 randomEl xs g = (xs !!) <$> randomRs (0, length xs - 1) g
+
