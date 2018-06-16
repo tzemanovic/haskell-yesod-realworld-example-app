@@ -10,6 +10,7 @@ module Handler.Articles
   , getArticleR
   , postArticlesR
   , putArticleR
+  , deleteArticleR
   )
   where
 
@@ -195,6 +196,29 @@ updateArticle (Entity articleId Article {..}) =
             ]
     runDB $ update articleId updates
     encodeArticle articleId
+
+--------------------------------------------------------------------------------
+-- Delete article
+
+deleteArticleR :: Text -> Handler Value
+deleteArticleR slug = do
+  Just userId <- maybeAuthId
+  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+
+  case mArticle of
+
+    Just (Entity articleId Article {..}) ->
+      if articleAuthor /= userId
+        then permissionDenied "Unauthorized"
+        else deleteArticle articleId
+
+    _  ->
+      notFound
+
+deleteArticle :: Key Article -> Handler Value
+deleteArticle articleId = do
+  runDB $ delete articleId
+  return Null
 
 --------------------------------------------------------------------------------
 -- Helpers
