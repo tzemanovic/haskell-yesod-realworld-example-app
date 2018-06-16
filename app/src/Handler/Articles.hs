@@ -87,7 +87,7 @@ getArticleR slug = do
 
   case mArticle of
     Just (Entity articleId _) -> encodeArticle articleId
-    _            -> notFound
+    _                         -> notFound
 
 --------------------------------------------------------------------------------
 -- Create article
@@ -137,12 +137,7 @@ postArticlesR = do
         _ <- runDB $ insert $ ArticleTag articleId tagId
         return ()
 
-    articles <- getArticles $ \article _ _ ->
-      E.where_ $ article ^. ArticleId ==. E.val articleId
-
-    case articles of
-      []          -> notFound
-      article : _ -> return $ object ["article" .= article]
+    encodeArticle articleId
 
 --------------------------------------------------------------------------------
 -- Update article
