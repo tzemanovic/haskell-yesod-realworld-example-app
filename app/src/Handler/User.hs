@@ -72,8 +72,9 @@ postUsersRegisterR :: Handler Value
 postUsersRegisterR =
   withForm registerForm $ \Register {..} -> do
     pwdHash <- liftIO $ makePassword (encodeUtf8 registerPassword) 14
+    now <- liftIO getCurrentTime
     let user = User registerEmail registerUsername (decodeUtf8 pwdHash) ""
-                    defaultUserImage
+                    defaultUserImage now now
     _ <- runDB $ insert user
     encodeUser user
 
@@ -116,6 +117,7 @@ putUserR = do
   Just userId <- maybeAuthId
   Just user <- runDB $ get userId
   withForm (updateForm user) $ \Update' {..} -> do
+    now <- liftIO getCurrentTime
     let updates =
           catMaybes
             [ maybeUpdate UserUsername updateUsername
@@ -123,6 +125,7 @@ putUserR = do
             , maybeUpdate UserPassword updatePassword
             , maybeUpdate UserImage updateImage
             , maybeUpdate UserBio updateBio
+            , maybeUpdate UserUpdatedAt (Just now)
             ]
     updatedUser <- runDB $ updateGet userId updates
     encodeUser updatedUser
@@ -184,5 +187,7 @@ encodeUser User {..} = do
         , "token" .= token
         , "bio" .= userBio
         , "image" .= userImage
+        , "createdAt" .= userCreatedAt
+        , "updatedAt" .= userUpdatedAt
         ]
     ]

@@ -7,6 +7,8 @@ User
     password Text
     bio Text
     image Text
+    createdAt UTCTime
+    updatedAt UTCTime
     UniqueUserUsername username
     UniqueUserEmail email
     deriving Show Typeable
@@ -43,6 +45,14 @@ ArticleTag
     article ArticleId
     tag TagId
     UniqueArticleTag article tag
+    deriving Show Typeable
+
+ArticleComment
+    article ArticleId
+    author UserId
+    body Text
+    createdAt UTCTime
+    updatedAt UTCTime
     deriving Show Typeable
 
 Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.

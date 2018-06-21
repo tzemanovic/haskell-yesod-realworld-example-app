@@ -11,6 +11,12 @@ module Handler.Articles
   , postArticlesR
   , putArticleR
   , deleteArticleR
+  , getArticleCommentsR
+  , postArticleCommentsR
+  , deleteArticleCommentR
+  , postArticleFavoriteR
+  , deleteArticleFavoriteR
+  , getTagsR
   )
   where
 
@@ -18,11 +24,11 @@ import           Data.Aeson
 import           Data.List                 ((!!))
 import qualified Data.Text                 as T
 import           Data.Text.Read            (decimal)
-import           Database.Esqueleto        ((==.), (?.), (^.))
+import           Database.Esqueleto        ((==.), (?.), (^.), (||.))
 import qualified Database.Esqueleto        as E
 import           Database.Persist.Extended (maybeUpdate)
 import           Handler.Profiles          (encodeProfile)
-import           Import                    hiding ((==.))
+import           Import                    hiding ((==.), (||.))
 import           System.Random             (RandomGen, newStdGen, randomRs)
 import           Web.Forma.Extra
 
@@ -66,7 +72,10 @@ getArticlesR = do
     E.where_ $ filterAuthor author
     E.where_ filterFavoritedBy
 
-  return $ object ["articles" .= articles]
+  return $ object
+    [ "articles" .= articles
+    , "articlesCount" .= length articles
+    ]
 
 --------------------------------------------------------------------------------
 -- Article feed
@@ -76,7 +85,10 @@ getArticlesFeedR = do
   articles <- getArticles $ \_ _ following ->
     E.where_ following
 
-  return $ object ["articles" .= articles]
+  return $ object
+    [ "articles" .= articles
+    , "articlesCount" .= length articles
+    ]
 
 --------------------------------------------------------------------------------
 -- Get article
@@ -173,6 +185,7 @@ putArticleR slug = do
 updateArticle :: Entity Article -> Handler Value
 updateArticle (Entity articleId Article {..}) =
   withForm updateArticleForm $ \UpdateArticle {..} -> do
+    now <- liftIO getCurrentTime
     updateSlug <-
       case updateArticleTitle of
 
@@ -188,6 +201,7 @@ updateArticle (Entity articleId Article {..}) =
             , maybeUpdate ArticleSlug updateSlug
             , maybeUpdate ArticleDescription updateArticleDescription
             , maybeUpdate ArticleBody updateArticleBody
+            , maybeUpdate ArticleUpdatedAt (Just now)
             ]
     runDB $ update articleId updates
     encodeArticle articleId
@@ -212,8 +226,52 @@ deleteArticleR slug = do
 
 deleteArticle :: Key Article -> Handler Value
 deleteArticle articleId = do
-  runDB $ delete articleId
+  runDB $ deleteCascade articleId
   return Null
+
+--------------------------------------------------------------------------------
+-- Get article's comments
+
+getArticleCommentsR :: Text -> Handler Value
+getArticleCommentsR slug = do
+  return $ object
+    [ "comments" .= ([] :: [Text]) ]
+
+--------------------------------------------------------------------------------
+-- Add comment to article
+
+postArticleCommentsR :: Text -> Handler Value
+postArticleCommentsR slug = do
+  return Null
+
+--------------------------------------------------------------------------------
+-- Delete article's comment
+
+deleteArticleCommentR :: Text -> Int -> Handler Value
+deleteArticleCommentR slug commentId = do
+  return Null
+
+--------------------------------------------------------------------------------
+-- Favorite article
+
+postArticleFavoriteR :: Text -> Handler Value
+postArticleFavoriteR slug = do
+  return Null
+
+--------------------------------------------------------------------------------
+-- Unfavorite article
+
+deleteArticleFavoriteR :: Text -> Handler Value
+deleteArticleFavoriteR slug = do
+  return Null
+
+--------------------------------------------------------------------------------
+-- Get all articles' tags
+
+getTagsR :: Handler Value
+getTagsR = do
+  let tags = [] :: [Text]
+  return $ object ["tags" .= tags]
 
 --------------------------------------------------------------------------------
 -- Helpers
@@ -258,13 +316,15 @@ getArticles extraQuery = do
           favorited = E.not_ $ E.isNothing $ mFavourite ?. ArticleFavoriteId
           favoritesCount = E.sub_select $ articleFavorites article
 
-      E.on $ article ^. ArticleAuthor ==. author ^. UserId
-      E.on $ mFollower ?. UserFollowerUser ==. E.just (author ^. UserId)
-      E.on $ mFollower ?. UserFollowerFollower ==. E.val mCurrentUserId
       E.on $ mFavourite ?. ArticleFavoriteUser ==. E.val mCurrentUserId
+      E.on $ mFollower ?. UserFollowerUser ==. E.just (author ^. UserId)
+      E.on $ article ^. ArticleAuthor ==. author ^. UserId
       E.limit limit
       E.offset offset
       E.orderBy [ E.desc $ article ^. ArticleCreatedAt ]
+      E.where_ $
+        mFollower ?. UserFollowerFollower ==. E.val mCurrentUserId ||.
+        E.isNothing (mFollower ?. UserFollowerId)
       extraQuery article author following
 
       return (article, author, following, favorited, favoritesCount)

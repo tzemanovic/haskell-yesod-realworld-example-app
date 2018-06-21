@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e0c1d71809797ba9287c37bae79f4c0f04390ec54df1448e7a54aa93bf785939
+-- hash: 2a35af65cc0317fb537f257bbc90ac9cfce3fc09fe88d9d5cf0d1a91ce601a65
 
 name:           app
 version:        0.0.0
@@ -78,6 +78,7 @@ library
     , unordered-containers
     , vector
     , wai
+    , wai-cors
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
@@ -140,6 +141,7 @@ executable app
     , unordered-containers
     , vector
     , wai
+    , wai-cors
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
@@ -204,6 +206,7 @@ test-suite test
     , unordered-containers
     , vector
     , wai
+    , wai-cors
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3

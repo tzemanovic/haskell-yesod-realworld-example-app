@@ -31,6 +31,7 @@ import Network.Wai.Handler.Warp             (Settings, defaultSettings,
                                              defaultShouldDisplayException,
                                              runSettings, setHost,
                                              setOnException, setPort, getPort)
+import Network.Wai.Middleware.Cors
 import Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                              IPAddrSource (..),
                                              OutputFormat (..), destination,
@@ -94,7 +95,7 @@ makeFoundation appSettings = do
       runMigration migrateAll
       -- deleteBy $ UniqueUserUsername "tzemanovic"
       -- tzPwd <- liftIO $ makePassword "test" 14
-      -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" ""
+      -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" "" now now
 
     -- Return the foundation
     return $ mkFoundation pool
@@ -106,7 +107,29 @@ makeApplication foundation = do
     logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
     appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging appPlain
+    return $ logWare $ defaultMiddlewaresNoLogging $ corsified appPlain
+
+-- | CORS middleware configured with 'appCorsResourcePolicy'.
+corsified :: Middleware
+corsified = cors (const $ Just appCorsResourcePolicy)
+
+-- | Cors resource policy to be used with 'corsified' middleware.
+--
+-- This policy will set the following:
+--
+-- * RequestHeaders: @Content-Type@
+-- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
+appCorsResourcePolicy :: CorsResourcePolicy
+appCorsResourcePolicy = CorsResourcePolicy {
+    corsOrigins        = Nothing
+  , corsMethods        = ["OPTIONS", "GET", "PUT", "POST", "DELETE"]
+  , corsRequestHeaders = ["Authorization", "Content-Type"]
+  , corsExposedHeaders = Nothing
+  , corsMaxAge         = Nothing
+  , corsVaryOrigin     = False
+  , corsRequireOrigin  = False
+  , corsIgnoreFailures = False
+}
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =

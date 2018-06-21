@@ -20,7 +20,8 @@ getProfilesR :: Text -> Handler Value
 getProfilesR username = do
   (Entity userId user) <- runDB $ getBy404 $ UniqueUserUsername username
   mCurrentUserId <- maybeAuthId
-  encodeProfile user <$>
+  let wrap = object . singleton . (.=) "profile"
+  wrap . encodeProfile user <$>
     case mCurrentUserId of
       Just currentUserId ->
         isJust <$> runDB (getBy $ UniqueUserFollower userId currentUserId)
@@ -29,12 +30,10 @@ getProfilesR username = do
 encodeProfile :: User -> Bool -> Value
 encodeProfile User {..} following =
   object
-    [ "profile" .= object
-        [ "username" .= userUsername
-        , "bio" .= userBio
-        , "image" .= userImage
-        , "following" .= following
-        ]
+    [ "username" .= userUsername
+    , "bio" .= userBio
+    , "image" .= userImage
+    , "following" .= following
     ]
 
 --------------------------------------------------------------------------------
