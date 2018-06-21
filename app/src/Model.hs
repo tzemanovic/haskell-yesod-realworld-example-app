@@ -19,7 +19,7 @@ import           Database.Persist.Types.Email
 -- http://www.yesodweb.com/book/persistent/
 share
   [ mkPersist sqlSettings
-  , mkDeleteCascade sqlOnlySettings
+  , mkDeleteCascade sqlSettings
   , mkMigrate "migrateAll"
   ]
   $(persistFileWith lowerCaseSettings "config/models")

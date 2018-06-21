@@ -234,8 +234,8 @@ deleteArticle articleId = do
 
 getArticleCommentsR :: Text -> Handler Value
 getArticleCommentsR slug = do
-  return $ object
-    [ "comments" .= ([] :: [Text]) ]
+  comments <- getComments slug
+  return $ object ["comments" .= (encodeComment <$> comments)]
 
 --------------------------------------------------------------------------------
 -- Add comment to article
@@ -274,15 +274,7 @@ getTagsR = do
   return $ object ["tags" .= tags]
 
 --------------------------------------------------------------------------------
--- Helpers
-
-encodeArticle :: Key Article -> Handler Value
-encodeArticle articleId = do
-  articles <- getArticles $ \article _ _ ->
-    E.where_ $ article ^. ArticleId ==. E.val articleId
-  case articles of
-    [] -> notFound
-    article : _ -> return $ object ["article" .= article]
+-- DB queries
 
 getArticles ::
   (E.SqlExpr (Entity Article)
@@ -357,6 +349,50 @@ addArticleTagList
       , "updatedAt" .= articleUpdatedAt
       , "favorited" .= favorited
       , "favoritesCount" .= favoritesCount
+      , "author" .= encodeProfile author following
+      ]
+
+getComments ::
+     Text -> Handler [(Entity ArticleComment, Entity User, E.Value Bool)]
+getComments articleSlug = do
+  mCurrentUserId <- maybeAuthId
+  runDB $
+    E.select $
+    E.from $ \(article
+              `E.InnerJoin` comment
+              `E.InnerJoin` author
+              `E.LeftOuterJoin` mFollower) -> do
+      let following = E.not_ $ E.isNothing $ mFollower ?. UserFollowerId
+
+      E.on $ mFollower ?. UserFollowerUser ==. E.just (author ^. UserId)
+      E.on $ author ^. UserId ==. comment ^. ArticleCommentAuthor
+      E.on $ comment ^. ArticleCommentArticle ==. article ^. ArticleId
+      E.where_ $ article ^. ArticleSlug ==. E.val articleSlug
+      E.where_ $
+        mFollower ?. UserFollowerFollower ==. E.val mCurrentUserId ||.
+        E.isNothing (mFollower ?. UserFollowerId)
+
+      return (comment, author, following)
+
+--------------------------------------------------------------------------------
+-- Helpers
+
+encodeArticle :: Key Article -> Handler Value
+encodeArticle articleId = do
+  articles <- getArticles $ \article _ _ ->
+    E.where_ $ article ^. ArticleId ==. E.val articleId
+  case articles of
+    []          -> notFound
+    article : _ -> return $ object ["article" .= article]
+
+encodeComment :: (Entity ArticleComment, Entity User, E.Value Bool) -> Value
+encodeComment
+  (Entity commentId ArticleComment {..}, Entity _ author , E.Value following) =
+    object
+      [ "id" .= commentId
+      , "createdAt" .= articleCommentCreatedAt
+      , "updatedAt" .= articleCommentUpdatedAt
+      , "body" .= articleCommentBody
       , "author" .= encodeProfile author following
       ]
 
