@@ -70,12 +70,15 @@ withApp = before $ do
 insertUser :: Text -> Email -> Text -> YesodExample App (Key User)
 insertUser username email password = do
   pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
+  now <- liftIO getCurrentTime
   runDB $ insert User
         { userEmail = email
         , userUsername = username
         , userPassword = decodeUtf8 pwdHash
         , userBio = ""
         , userImage = ""
+        , userCreatedAt = now
+        , userUpdatedAt = now
         }
 
 -- | Get response from JSON body.
