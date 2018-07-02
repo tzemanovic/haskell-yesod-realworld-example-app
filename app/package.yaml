@@ -53,7 +53,7 @@ dependencies:
 - mtl
 - http-types
 - esqueleto
-- random
+- QuickCheck
 - wai-cors
 
 # The library contains all of our application code. The executable

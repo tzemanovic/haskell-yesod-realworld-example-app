@@ -9,8 +9,7 @@ module Handler.User
   , postUsersRegisterR
   , getUserR
   , putUserR
-  )
-  where
+  ) where
 
 import           Control.Monad.Except          (ExceptT, throwError)
 import           Data.Aeson                    (object)
