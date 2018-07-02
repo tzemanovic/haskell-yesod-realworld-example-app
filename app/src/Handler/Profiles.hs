@@ -44,10 +44,7 @@ postFollowR username = do
   (Entity userId _) <- runDB $ getBy404 $ UniqueUserUsername username
   Just currentUserId <- maybeAuthId
   let follower = UserFollower userId currentUserId
-  conflict <- runDB $ checkUnique follower
-  case conflict of
-    Just _ -> return ()
-    _      -> runDB $ insert_ follower
+  _ <- runDB $ insertUnique follower
   getProfilesR username
 
 --------------------------------------------------------------------------------

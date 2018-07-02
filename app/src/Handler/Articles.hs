@@ -268,14 +268,33 @@ deleteArticleCommentR slug commentId = do
 
 postArticleFavoriteR :: Text -> Handler Value
 postArticleFavoriteR slug = do
-  return Null
+  Just userId <- maybeAuthId
+  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+  case mArticle of
+
+    Just (Entity articleId _) -> do
+      let articleFavorite = ArticleFavorite articleId userId
+      _ <- runDB $ insertUnique articleFavorite
+      getArticle articleId
+
+    _  ->
+      notFound
 
 --------------------------------------------------------------------------------
 -- Unfavorite article
 
 deleteArticleFavoriteR :: Text -> Handler Value
 deleteArticleFavoriteR slug = do
-  return Null
+  Just userId <- maybeAuthId
+  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+  case mArticle of
+
+    Just (Entity articleId _) -> do
+      runDB $ deleteBy $ UniqueArticleFavorite articleId userId
+      getArticle articleId
+
+    _  ->
+      notFound
 
 --------------------------------------------------------------------------------
 -- Get all articles' tags
