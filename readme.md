@@ -31,7 +31,7 @@ API route status
 - [X] Delete Article (`DELETE /api/articles/:slug`)
 - [X] Add Comments to an Article (`POST /api/articles/:slug/comments`)
 - [X] Get Comments from an Article (`GET /api/articles/:slug/comments`)
-- [ ] Delete Comment (`DELETE /api/articles/:slug/comments/:id`)
+- [X] Delete Comment (`DELETE /api/articles/:slug/comments/:id`)
 - [ ] Favourite Article (`POST /api/articles/:slug/favorite`)
 - [ ] Unfavourite Article (`DELETE /api/articles/:slug/favorite`)
 - [ ] Get Tags (`GET /api/tags`)

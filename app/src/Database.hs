@@ -189,15 +189,14 @@ getArticlesCount mCurrentUserId extraClause =
   select $
   from $ \(article
           `InnerJoin` author
-          `LeftOuterJoin` mFollower) -> do
+          `LeftOuterJoin` mFollower
+          ) -> do
     let following = not_ $ isNothing $ mFollower ?. UserFollowerId
 
-    on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId)
+    on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId) &&.
+         mFollower ?. UserFollowerFollower ==. val mCurrentUserId
     on $ article ^. ArticleAuthor ==. author ^. UserId
     orderBy [ desc $ article ^. ArticleCreatedAt ]
-    where_ $
-      mFollower ?. UserFollowerFollower ==. val mCurrentUserId ||.
-      isNothing (mFollower ?. UserFollowerId)
     extraClause article author following
     return countRows
 
@@ -222,20 +221,19 @@ getArticles mCurrentUserId extraClause = do
     runDB $
     select $
     from $ \(article
-               `InnerJoin` author
-               `LeftOuterJoin` mFollower
-               `LeftOuterJoin` mFavourite) -> do
+            `InnerJoin` author
+            `LeftOuterJoin` mFollower
+            `LeftOuterJoin` mFavourite
+            ) -> do
       let following = not_ $ isNothing $ mFollower ?. UserFollowerId
           favorited = not_ $ isNothing $ mFavourite ?. ArticleFavoriteId
           favoritesCount = sub_select $ articleFavorites article
 
       on $ mFavourite ?. ArticleFavoriteUser ==. val mCurrentUserId
-      on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId)
+      on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId) &&.
+           mFollower ?. UserFollowerFollower ==. val mCurrentUserId
       on $ article ^. ArticleAuthor ==. author ^. UserId
       orderBy [ desc $ article ^. ArticleCreatedAt ]
-      where_ $
-        mFollower ?. UserFollowerFollower ==. val mCurrentUserId ||.
-        isNothing (mFollower ?. UserFollowerId)
       extraClause article author following
       return (article, author, following, favorited, favoritesCount)
 
@@ -253,9 +251,10 @@ getComments mCurrentUserId extraClause = do
     runDB $
     select $
     from $ \(comment
-              `InnerJoin` article
-              `InnerJoin` author
-              `LeftOuterJoin` mFollower) -> do
+            `InnerJoin` article
+            `InnerJoin` author
+            `LeftOuterJoin` mFollower
+            ) -> do
       let following = not_ $ isNothing $ mFollower ?. UserFollowerId
 
       on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId)
