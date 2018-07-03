@@ -13,7 +13,7 @@ module Database
   , getCommentsByArticleSlug
   ) where
 
-import           ClassyPrelude.Yesod hiding (Value, isNothing, on, (==.), (||.))
+import           ClassyPrelude.Yesod hiding (Value, isNothing, on, (==.))
 import           Database.Esqueleto
 import           Foundation
 import           Handler.Profiles    (encodeProfile)
@@ -105,19 +105,20 @@ getGlobalArticleFeed mCurrentUserId mTag mAuthor mFavoritedBy page = do
         Just username -> val username ==. author ^. UserUsername
         _             -> val True
 
-    filterFavoritedBy =
+    filterFavoritedBy article =
       case mFavoritedBy of
         Just favoritedBy ->
           exists $
           from $ \(favorite `InnerJoin` user) -> do
-            on $ favorite ^. ArticleFavoriteUser ==. user ^. UserId
+            on $ favorite ^. ArticleFavoriteUser ==. user ^. UserId &&.
+                 favorite ^. ArticleFavoriteArticle ==. article ^. ArticleId
             where_ $ val favoritedBy ==. user ^. UserUsername
         _ -> val True
 
     clause article author _ = do
       where_ $ filterTag article
       where_ $ filterAuthor author
-      where_ filterFavoritedBy
+      where_ $ filterFavoritedBy article
 
   paginateArticles
     (getArticles mCurrentUserId)
@@ -257,12 +258,10 @@ getComments mCurrentUserId extraClause = do
             ) -> do
       let following = not_ $ isNothing $ mFollower ?. UserFollowerId
 
-      on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId)
+      on $ mFollower ?. UserFollowerUser ==. just (author ^. UserId) &&.
+           mFollower ?. UserFollowerFollower ==. val mCurrentUserId
       on $ author ^. UserId ==. comment ^. ArticleCommentAuthor
       on $ article ^. ArticleId ==. comment ^. ArticleCommentArticle
-      where_ $
-        mFollower ?. UserFollowerFollower ==. val mCurrentUserId ||.
-        isNothing (mFollower ?. UserFollowerId)
       extraClause comment article
       return (comment, author, following)
 

@@ -301,8 +301,9 @@ deleteArticleFavoriteR slug = do
 
 getTagsR :: Handler Value
 getTagsR = do
-  let tags = [] :: [Text]
-  return $ object ["tags" .= tags]
+  tags <- runDB $ selectList ([] :: [Filter Tag]) []
+  let tagNames (Entity _ Tag {..}) = tagName
+  return $ object ["tags" .= (tagNames <$> tags)]
 
 --------------------------------------------------------------------------------
 -- Helpers
