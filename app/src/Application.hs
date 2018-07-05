@@ -22,9 +22,8 @@ module Application
 
 import           Control.Monad.Logger                 (liftLoc, runLoggingT)
 import           Database.Persist.Sqlite              (createSqlitePool,
-                                                       runMigration,
-                                                       runSqlPool, sqlDatabase,
-                                                       sqlPoolSize)
+                                                       runMigration, runSqlPool,
+                                                       sqlDatabase, sqlPoolSize)
 import           Handler.Articles
 import           Handler.Profiles
 import           Handler.User
@@ -44,7 +43,6 @@ import           Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                                        destination,
                                                        mkRequestLogger,
                                                        outputFormat)
-import           System.Environment                   (getEnv)
 import           System.Log.FastLogger                (defaultBufSize,
                                                        newStdoutLoggerSet,
                                                        toLogStr)
@@ -64,7 +62,6 @@ makeFoundation appSettings = do
     -- subsite.
     appHttpManager <- newManager
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
-    appJwtSecret <- fromString <$> getEnv "JWT_SECRET"
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
@@ -93,24 +90,23 @@ makeFoundation appSettings = do
 -- applying some additional middlewares.
 makeApplication :: App -> IO Application
 makeApplication foundation = do
-    logWare <- makeLogWare foundation
+  logWare <- makeLogWare foundation
     -- Create the WAI application and apply middlewares
-    appPlain <- toWaiAppPlain foundation
-    return $ logWare $ defaultMiddlewaresNoLogging $ corsified appPlain
+  appPlain <- toWaiAppPlain foundation
+  settings <- getAppSettings
+  return $
+    logWare $
+    defaultMiddlewaresNoLogging $
+    (corsified $ appCorsOriginWhitelist settings) appPlain
 
 -- | CORS middleware configured with 'appCorsResourcePolicy'.
-corsified :: Middleware
-corsified = cors (const $ Just appCorsResourcePolicy)
+corsified :: [Text] -> Middleware
+corsified = cors . const . Just . appCorsResourcePolicy
 
 -- | Cors resource policy to be used with 'corsified' middleware.
---
--- This policy will set the following:
---
--- * RequestHeaders: @Content-Type@
--- * MethodsAllowed: @OPTIONS, GET, PUT, POST@
-appCorsResourcePolicy :: CorsResourcePolicy
-appCorsResourcePolicy = CorsResourcePolicy {
-    corsOrigins        = Nothing
+appCorsResourcePolicy :: [Text] -> CorsResourcePolicy
+appCorsResourcePolicy corsWhitelist = CorsResourcePolicy {
+    corsOrigins        = Just (encodeUtf8 <$> corsWhitelist, False)
   , corsMethods        = ["OPTIONS", "GET", "PUT", "POST", "DELETE"]
   , corsRequestHeaders = ["Authorization", "Content-Type"]
   , corsExposedHeaders = Nothing

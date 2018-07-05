@@ -18,13 +18,11 @@ import           Database.Persist.Sql (PersistFieldSql (..))
 import qualified Text.Email.Validate  as Email
 
 -- | Custom Persistance field type that handles email validation.
-
 newtype Email = Email
   { unEmail :: CI Text }
   deriving (Show, Eq)
 
 -- | Try to instantiate an 'Email' from 'Text'.
-
 mkEmail :: Text -> Maybe Email
 mkEmail email =
   if Email.isValid $ encodeUtf8 email

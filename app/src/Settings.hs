@@ -39,7 +39,6 @@ data AppSettings = AppSettings
     , appIpFromHeader           :: Bool
     -- ^ Get the IP address from the header when logging. Useful when sitting
     -- behind a reverse proxy.
-
     , appDetailedRequestLogging :: Bool
     -- ^ Use detailed request logging system
     , appShouldLogAll           :: Bool
@@ -50,15 +49,10 @@ data AppSettings = AppSettings
     -- ^ Assume that files in the static dir may change after compilation
     , appSkipCombining          :: Bool
     -- ^ Perform no stylesheet/script combining
-
-    -- Example app-specific configuration values.
-    , appCopyright              :: Text
-    -- ^ Copyright text to appear in the footer of the page
-    , appAnalytics              :: Maybe Text
-    -- ^ Google Analytics code
-
-    , appAuthDummyLogin         :: Bool
-    -- ^ Indicate if auth dummy login should be enabled.
+    , appJwtSecret              :: Text
+    -- ^ JWT secret key
+    , appCorsOriginWhitelist    :: [Text]
+    -- ^ Origins allowed to perform CORS requests
     }
 
 instance FromJSON AppSettings where
@@ -83,10 +77,8 @@ instance FromJSON AppSettings where
         appMutableStatic          <- o .:? "mutable-static"   .!= dev
         appSkipCombining          <- o .:? "skip-combining"   .!= dev
 
-        appCopyright              <- o .:  "copyright"
-        appAnalytics              <- o .:? "analytics"
-
-        appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
+        appJwtSecret              <- o .:  "jwt-secret"
+        appCorsOriginWhitelist    <- o .:  "cors-origin-whitelist"
 
         return AppSettings {..}
 

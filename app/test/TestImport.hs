@@ -51,7 +51,6 @@ runHandler handler = do
     fakeHandlerGetLogger appLogger app handler
 
 -- | Spec runner that sets up a test environment with DB.
-
 withApp :: SpecWith (TestApp App) -> Spec
 withApp = before $ do
     setEnv "JWT_SECRET" "test"
@@ -65,7 +64,6 @@ withApp = before $ do
     return (foundation, logWare)
 
 -- | Insert a user into the DB.
-
 insertUser :: Text -> Email -> Text -> YesodExample App (Key User)
 insertUser username email password = do
   pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
@@ -81,7 +79,6 @@ insertUser username email password = do
         }
 
 -- | Get response from JSON body.
-
 getJsonResponse :: FromJSON a => YesodExample App a
 getJsonResponse =
   withResponse $ \SResponse {..} ->
@@ -91,7 +88,6 @@ getJsonResponse =
 
 -- | Build a request that gets a JWT token for a given username and uses it
 -- to set the request's authentication header.
-
 authenticatedRequest :: Text -> RequestBuilder App () -> YesodExample App ()
 authenticatedRequest username reqBuilder = do
   token <- runHandler $ usernameToJwtToken username
@@ -102,7 +98,6 @@ authenticatedRequest username reqBuilder = do
 -- | This function will truncate all of the tables in your database.
 -- 'withApp' calls it before each test, creating a clean environment for each
 -- spec to run in.
-
 wipeDB :: App -> IO ()
 wipeDB app = do
     -- In order to wipe the database, we need to use a connection which has

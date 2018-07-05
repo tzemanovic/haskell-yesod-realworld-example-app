@@ -182,7 +182,6 @@ verifyPwd password pwdHash =
   verifyPassword (encodeUtf8 password) $ encodeUtf8 pwdHash
 
 -- | Encode a 'User' with a JWT authentication token.
-
 encodeUser :: User -> Handler Value
 encodeUser User {..} = do
   token <- usernameToJwtToken userUsername

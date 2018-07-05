@@ -28,7 +28,6 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
-    , appJwtSecret   :: Text
     }
 
 data MenuItem = MenuItem
@@ -189,7 +188,7 @@ jwtTokenToUsername token = do
 
 getJwtSecret :: MonadReader App m => m JWT.Secret
 getJwtSecret =
-  JWT.secret . appJwtSecret <$> ask
+  JWT.secret . appJwtSecret . appSettings <$> ask
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
