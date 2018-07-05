@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE RecordWildCards   #-}
 
 module TestImport
@@ -124,7 +123,7 @@ wipeDB app = do
     flip runSqlPersistMPool pool $ do
         tables <- getTables
         sqlBackend <- ask
-        let queries = map (\t -> "DELETE FROM " ++ (connEscapeName sqlBackend $ DBName t)) tables
+        let queries = map (\t -> "DELETE FROM " ++ connEscapeName sqlBackend (DBName t)) tables
         forM_ queries (\q -> rawExecute q [])
 
 getTables :: DB [Text]

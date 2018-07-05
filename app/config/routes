@@ -1,19 +1,6 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/static StaticR Static appStatic
-/auth   AuthR   Auth   getAuth
-
-/favicon.ico FaviconR GET
-/robots.txt RobotsR GET
-
-/ HomeR GET POST
-
-/comments CommentR POST
-
-/profile ProfileR GET
-
--- Conduit
 /api/articles ArticlesR GET POST
 /api/articles/feed ArticlesFeedR GET
 -- We have to start with exclamation mark to disable overlap checking.

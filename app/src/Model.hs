@@ -5,11 +5,13 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE NoImplicitPrelude          #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 module Model where
 
 import           ClassyPrelude.Yesod
+import           Data.Aeson                   (Value(String))
 import           Database.Persist.Quasi
 import           Database.Persist.Types.Email
 
@@ -23,3 +25,6 @@ share
   , mkMigrate "migrateAll"
   ]
   $(persistFileWith lowerCaseSettings "config/models")
+
+instance ToJSON (Entity Tag) where
+  toJSON (Entity _ Tag {..}) = String tagName

@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Database.Persist.Types.Email.Internal
   ( Email(..)
@@ -31,24 +32,25 @@ mkEmail email =
     else Nothing
 
 instance PersistField Email where
-  toPersistValue Email {unEmail = email} =
-    PersistText $ CI.original email
+  toPersistValue Email {unEmail = email} = PersistText $ CI.original email
   fromPersistValue (PersistText text) =
     case mkEmail text of
-      Just email -> Right email
+      Just email ->
+        Right email
       _ ->
-        Left $
-        "Database/Persist/Extended.hs: Deserialized invalid email address: " <>
-        text
+        Left $ path <> "Deserialized invalid email address: " <> text
+
   fromPersistValue x =
     Left $
-    "Database/Persist/Extended.hs: When trying to deserialize Email: expected \
-    \PersistText, received: " <>
+    path <>
+    "When trying to deserialize Email: expected PersistText, received: " <>
     T.pack (show x)
 
 instance PersistFieldSql Email where
   sqlType _ = SqlString
 
 instance ToJSON Email where
-  toJSON Email {unEmail = email} =
-    String $ CI.original email
+  toJSON Email {..} = String $ CI.original unEmail
+
+path :: Text
+path = "Database/Persist/Types/Email/Internal.hs: "

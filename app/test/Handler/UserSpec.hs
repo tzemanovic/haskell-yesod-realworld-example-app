@@ -9,6 +9,7 @@ import qualified Data.CaseInsensitive                  as CI
 import           Database.Persist.Types.Email.Internal (Email (..))
 import           TestImport
 
+
 data User' = User'
   { loginEmail    :: Text
   , loginUsername :: Text

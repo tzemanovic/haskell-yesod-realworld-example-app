@@ -54,9 +54,3 @@ ArticleComment
     createdAt UTCTime
     updatedAt UTCTime
     deriving Show Typeable
-
-Comment json -- Adding "json" causes ToJSON and FromJSON instances to be derived.
-    message Text
-    userId UserId Maybe
-    deriving Eq
-    deriving Show

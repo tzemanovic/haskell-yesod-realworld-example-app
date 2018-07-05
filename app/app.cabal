@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a13a31bbe7f711a649959553858f968deb4f79fcdc8fd911c20e62a3631101dd
+-- hash: a053d65c991f103d3144c4919a3c91e717d9e11d01ef68c0d10755631632a670
 
 name:           app
 version:        0.0.0
@@ -28,10 +28,6 @@ library
       Database.Persist.Types.Email.Internal
       Foundation
       Handler.Articles
-      Handler.Comment
-      Handler.Common
-      Handler.Home
-      Handler.Profile
       Handler.Profiles
       Handler.User
       Import
@@ -39,7 +35,6 @@ library
       Model
       Pagination
       Settings
-      Settings.StaticFiles
       Web.Forma.Extra
   hs-source-dirs:
       src
@@ -90,7 +85,6 @@ library
     , yesod-auth >=1.4.0 && <1.5
     , yesod-core >=1.4.30 && <1.5
     , yesod-form >=1.4.0 && <1.5
-    , yesod-static >=1.4.0.3 && <1.6
   if (flag(dev)) || (flag(library-only))
     ghc-options: -Wall -fwarn-tabs -O0
     cpp-options: -DDEVELOPMENT
@@ -153,7 +147,6 @@ executable app
     , yesod-auth >=1.4.0 && <1.5
     , yesod-core >=1.4.30 && <1.5
     , yesod-form >=1.4.0 && <1.5
-    , yesod-static >=1.4.0.3 && <1.6
   if flag(library-only)
     buildable: False
   other-modules:
@@ -218,12 +211,8 @@ test-suite test
     , yesod-auth >=1.4.0 && <1.5
     , yesod-core >=1.4.30 && <1.5
     , yesod-form >=1.4.0 && <1.5
-    , yesod-static >=1.4.0.3 && <1.6
     , yesod-test
   other-modules:
-      Handler.CommentSpec
-      Handler.CommonSpec
-      Handler.HomeSpec
       Handler.ProfilesSpec
       Handler.UserSpec
       TestImport

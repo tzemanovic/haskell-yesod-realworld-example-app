@@ -1,8 +1,9 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedLabels  #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedLabels    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Handler.Articles
   ( getArticlesR
@@ -301,9 +302,8 @@ deleteArticleFavoriteR slug = do
 
 getTagsR :: Handler Value
 getTagsR = do
-  tags <- runDB $ selectList ([] :: [Filter Tag]) []
-  let tagNames (Entity _ Tag {..}) = tagName
-  return $ object ["tags" .= (tagNames <$> tags)]
+  tags :: [Entity Tag] <- runDB $ selectList [] []
+  return $ object ["tags" .= tags]
 
 --------------------------------------------------------------------------------
 -- Helpers

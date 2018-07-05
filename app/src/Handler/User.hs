@@ -16,7 +16,6 @@ import           Data.Aeson                    (object)
 import           Database.Persist.Extended
 import           Import                        hiding (Form, FormResult)
 import           Web.Forma.Extra
-
 import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 
 
@@ -70,10 +69,10 @@ registerForm =
 postUsersRegisterR :: Handler Value
 postUsersRegisterR =
   withForm registerForm $ \Register {..} -> do
-    pwdHash <- liftIO $ makePassword (encodeUtf8 registerPassword) 14
+    pwdHash <- mkPwd registerPassword
     now <- liftIO getCurrentTime
-    let user = User registerEmail registerUsername (decodeUtf8 pwdHash) ""
-                    defaultUserImage now now
+    let user = User registerEmail registerUsername pwdHash "" defaultUserImage
+                    now now
     _ <- runDB $ insert user
     encodeUser user
 
@@ -117,11 +116,15 @@ putUserR = do
   Just user <- runDB $ get userId
   withForm (updateForm user) $ \Update' {..} -> do
     now <- liftIO getCurrentTime
+    pwdHash <-
+      case updatePassword of
+        Just pwd -> Just <$> mkPwd pwd
+        _        -> return Nothing
     let updates =
           catMaybes
             [ maybeUpdate UserUsername updateUsername
             , maybeUpdate UserEmail updateEmail
-            , maybeUpdate UserPassword updatePassword
+            , maybeUpdate UserPassword pwdHash
             , maybeUpdate UserImage updateImage
             , maybeUpdate UserBio updateBio
             , maybeUpdate UserUpdatedAt (Just now)
@@ -169,6 +172,10 @@ uniqueUsernameIfChanged currentUsername newUsername =
 
 defaultUserImage :: Text
 defaultUserImage = "https://static.productionready.io/images/smiley-cyrus.jpg"
+
+mkPwd :: MonadIO m => Text -> m Text
+mkPwd pwd =
+  decodeUtf8 <$> liftIO (makePassword (encodeUtf8 pwd) 14)
 
 verifyPwd :: Text -> Text -> Bool
 verifyPwd password pwdHash =

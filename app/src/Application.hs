@@ -1,10 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Application
     ( getApplicationDev
@@ -20,37 +20,34 @@ module Application
     , db
     ) where
 
-import Control.Monad.Logger                 (liftLoc, runLoggingT)
-import Database.Persist.Sqlite              (createSqlitePool, runSqlPool,
-                                             sqlDatabase, sqlPoolSize, runMigration,
-                                             runMigrationUnsafe)
-import Import
-import Language.Haskell.TH.Syntax           (qLocation)
-import Network.Wai (Middleware)
-import Network.Wai.Handler.Warp             (Settings, defaultSettings,
-                                             defaultShouldDisplayException,
-                                             runSettings, setHost,
-                                             setOnException, setPort, getPort)
-import Network.Wai.Middleware.Cors
-import Network.Wai.Middleware.RequestLogger (Destination (Logger),
-                                             IPAddrSource (..),
-                                             OutputFormat (..), destination,
-                                             mkRequestLogger, outputFormat)
-import System.Environment                   (getEnv)
-import System.Log.FastLogger                (defaultBufSize, newStdoutLoggerSet,
-                                             toLogStr)
-import Yesod.Auth.Util.PasswordStore        (makePassword)
-
--- Import all relevant handler modules here.
--- Don't forget to add new modules to your cabal file!
-import Handler.Common
-import Handler.Home
-import Handler.Comment
-import Handler.Profile
--- TODO remove above
-import Handler.Articles
-import Handler.Profiles
-import Handler.User
+import           Control.Monad.Logger                 (liftLoc, runLoggingT)
+import           Database.Persist.Sqlite              (createSqlitePool,
+                                                       runMigration,
+                                                       runSqlPool, sqlDatabase,
+                                                       sqlPoolSize)
+import           Handler.Articles
+import           Handler.Profiles
+import           Handler.User
+import           Import
+import           Language.Haskell.TH.Syntax           (qLocation)
+import           Network.Wai                          (Middleware)
+import           Network.Wai.Handler.Warp             (Settings,
+                                                       defaultSettings,
+                                                       defaultShouldDisplayException,
+                                                       getPort, runSettings,
+                                                       setHost, setOnException,
+                                                       setPort)
+import           Network.Wai.Middleware.Cors
+import           Network.Wai.Middleware.RequestLogger (Destination (Logger),
+                                                       IPAddrSource (..),
+                                                       OutputFormat (..),
+                                                       destination,
+                                                       mkRequestLogger,
+                                                       outputFormat)
+import           System.Environment                   (getEnv)
+import           System.Log.FastLogger                (defaultBufSize,
+                                                       newStdoutLoggerSet,
+                                                       toLogStr)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -67,9 +64,6 @@ makeFoundation appSettings = do
     -- subsite.
     appHttpManager <- newManager
     appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
-    appStatic <-
-        (if appMutableStatic appSettings then staticDevel else static)
-        (appStaticDir appSettings)
     appJwtSecret <- fromString <$> getEnv "JWT_SECRET"
 
     -- We need a log function to create a connection pool. We need a connection
@@ -90,12 +84,7 @@ makeFoundation appSettings = do
         (sqlPoolSize $ appDatabaseConf appSettings)
 
     -- Perform database migration using our application's logging settings.
-    flip runLoggingT logFunc $ flip runSqlPool pool $ do
-      -- runMigrationUnsafe migrateAll
-      runMigration migrateAll
-      -- deleteBy $ UniqueUserUsername "tzemanovic"
-      -- tzPwd <- liftIO $ makePassword "test" 14
-      -- insert $ User "tzemanovic@gmail.com" "tzemanovic" (decodeUtf8 tzPwd) "" "" now now
+    flip runLoggingT logFunc $ flip runSqlPool pool $ runMigration migrateAll
 
     -- Return the foundation
     return $ mkFoundation pool

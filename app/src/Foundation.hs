@@ -1,31 +1,23 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ExplicitForAll        #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 module Foundation where
 
-import Import.NoFoundation
-import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Text.Hamlet          (hamletFile)
-import Text.Jasmine         (minifym)
-
-import Yesod.Default.Util   (addStaticContentExternal)
-import Yesod.Core.Types     (Logger)
-
-import Data.Char (isSpace)
-import Data.Map as Map ((!?), fromList)
-import Web.JWT as JWT
-
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text.Encoding as TE
-import qualified Yesod.Auth.Message as AuthMsg
-import qualified Yesod.Core.Unsafe as Unsafe
+import           Data.Char            (isSpace)
+import           Data.Map             as Map (fromList, (!?))
+import           Database.Persist.Sql (ConnectionPool, runSqlPool)
+import           Import.NoFoundation
+import           Web.JWT              as JWT
+import qualified Yesod.Auth.Message   as AuthMsg
+import           Yesod.Core.Types     (Logger)
+import qualified Yesod.Core.Unsafe    as Unsafe
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -33,7 +25,6 @@ import qualified Yesod.Core.Unsafe as Unsafe
 -- access to the data present here.
 data App = App
     { appSettings    :: AppSettings
-    , appStatic      :: Static -- ^ Settings for static file serving.
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
@@ -41,8 +32,8 @@ data App = App
     }
 
 data MenuItem = MenuItem
-    { menuItemLabel :: Text
-    , menuItemRoute :: Route App
+    { menuItemLabel          :: Text
+    , menuItemRoute          :: Route App
     , menuItemAccessCallback :: Bool
     }
 
@@ -95,103 +86,23 @@ instance Yesod App where
     -- For details, see the CSRF documentation in the Yesod.Core.Handler module of the yesod-core package.
     yesodMiddleware = defaultYesodMiddleware
 
-    defaultLayout widget = do
-        master <- getYesod
-        mmsg <- getMessage
-
-        muser <- maybeAuthPair
-        mcurrentRoute <- getCurrentRoute
-
-        -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
-        (title, parents) <- breadcrumbs
-
-        -- Define the menu items of the header.
-        let menuItems =
-                [ NavbarLeft MenuItem
-                    { menuItemLabel = "Home"
-                    , menuItemRoute = HomeR
-                    , menuItemAccessCallback = True
-                    }
-                , NavbarLeft MenuItem
-                    { menuItemLabel = "Profile"
-                    , menuItemRoute = ProfileR
-                    , menuItemAccessCallback = isJust muser
-                    }
-                , NavbarRight MenuItem
-                    { menuItemLabel = "Login"
-                    , menuItemRoute = AuthR LoginR
-                    , menuItemAccessCallback = isNothing muser
-                    }
-                , NavbarRight MenuItem
-                    { menuItemLabel = "Logout"
-                    , menuItemRoute = AuthR LogoutR
-                    , menuItemAccessCallback = isJust muser
-                    }
-                ]
-
-        let navbarLeftMenuItems = [x | NavbarLeft x <- menuItems]
-        let navbarRightMenuItems = [x | NavbarRight x <- menuItems]
-
-        let navbarLeftFilteredMenuItems = [x | x <- navbarLeftMenuItems, menuItemAccessCallback x]
-        let navbarRightFilteredMenuItems = [x | x <- navbarRightMenuItems, menuItemAccessCallback x]
-
-        -- We break up the default layout into two components:
-        -- default-layout is the contents of the body tag, and
-        -- default-layout-wrapper is the entire page. Since the final
-        -- value passed to hamletToRepHtml cannot be a widget, this allows
-        -- you to use normal widget features in default-layout.
-
-        pc <- widgetToPageContent $ do
-            addStylesheet $ StaticR css_bootstrap_css
-            $(widgetFile "default-layout")
-        withUrlRenderer $(hamletFile "templates/default-layout-wrapper.hamlet")
-
-    -- The page to be redirected to when authentication is required.
-    authRoute _ = Just $ AuthR LoginR
+    -- Routes requiring authentication.
+    isAuthorized ArticlesR True            = isAuthenticated
+    isAuthorized ArticlesFeedR _           = isAuthenticated
+    isAuthorized (ArticleCommentsR _) True = isAuthenticated
+    isAuthorized (ArticleCommentR _ _) _   = isAuthenticated
+    isAuthorized (ArticleFavoriteR _) _    = isAuthenticated
+    isAuthorized (FollowR _) _             = isAuthenticated
+    isAuthorized UserR _                   = isAuthenticated
 
     -- Routes not requiring authentication.
-    isAuthorized (AuthR _) _ = return Authorized
-    isAuthorized CommentR _ = return Authorized
-    isAuthorized HomeR _ = return Authorized
-    isAuthorized FaviconR _ = return Authorized
-    isAuthorized RobotsR _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
-    isAuthorized ProfileR _ = isAuthenticated
-    -- conduit
-    isAuthorized ArticlesR True = isAuthenticated
-    isAuthorized ArticlesR _ = return Authorized
-    isAuthorized ArticlesFeedR _ = isAuthenticated
-    isAuthorized (ArticleR _) _ = return Authorized
-    isAuthorized (ArticleCommentsR _) True = isAuthenticated
-    isAuthorized (ArticleCommentsR _) _ = return Authorized
-    isAuthorized (ArticleCommentR _ _) _ = isAuthenticated
-    isAuthorized (ArticleFavoriteR _) _ = isAuthenticated
-    isAuthorized (FollowR _) _ = isAuthenticated
-    isAuthorized (ProfilesR _) _ = return Authorized
-    isAuthorized UserR _ = isAuthenticated
-    isAuthorized UsersRegisterR _ = return Authorized
-    isAuthorized UsersLoginR _ = return Authorized
-    isAuthorized TagsR _ = return Authorized
-
-
-    -- This function creates static content files in the static folder
-    -- and names them based on a hash of their content. This allows
-    -- expiration dates to be set far in the future without worry of
-    -- users receiving stale content.
-    addStaticContent ext mime content = do
-        master <- getYesod
-        let staticDir = appStaticDir $ appSettings master
-        addStaticContentExternal
-            minifym
-            genFileName
-            staticDir
-            (StaticR . flip StaticRoute [])
-            ext
-            mime
-            content
-      where
-        -- Generate a unique filename based on the content itself
-        genFileName lbs = "autogen-" ++ base64md5 lbs
+    isAuthorized ArticlesR _               = return Authorized
+    isAuthorized (ArticleR _) _            = return Authorized
+    isAuthorized (ArticleCommentsR _) _    = return Authorized
+    isAuthorized (ProfilesR _) _           = return Authorized
+    isAuthorized UsersRegisterR _          = return Authorized
+    isAuthorized UsersLoginR _             = return Authorized
+    isAuthorized TagsR _                   = return Authorized
 
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
@@ -204,9 +115,6 @@ instance Yesod App where
 
 -- Define breadcrumbs.
 instance YesodBreadcrumbs App where
-  breadcrumb HomeR = return ("Home", Nothing)
-  breadcrumb (AuthR _) = return ("Login", Just HomeR)
-  breadcrumb ProfileR = return ("Profile", Just HomeR)
   breadcrumb  _ = return ("home", Nothing)
 
 -- How to run database actions.
@@ -222,9 +130,9 @@ instance YesodAuth App where
     type AuthId App = UserId
 
     -- Where to send a user after successful login
-    loginDest _ = HomeR
+    loginDest _ = ArticlesR
     -- Where to send a user after logout
-    logoutDest _ = HomeR
+    logoutDest _ = ArticlesR
     -- Override the above two destinations when a Referer: header is present
     redirectToReferer _ = True
 
@@ -257,7 +165,7 @@ getUserId username = do
   mUser <- runDB $ getBy $ UniqueUserUsername username
   case mUser of
     Just (Entity userId _) -> return $ Just userId
-    _ ->                      return Nothing
+    _                      ->                      return Nothing
 
 extractToken :: Text -> Maybe Text
 extractToken auth
@@ -289,7 +197,7 @@ isAuthenticated = do
     muid <- maybeAuthId
     return $ case muid of
         Nothing -> Unauthorized "You must login to access this page"
-        Just _ -> Authorized
+        Just _  -> Authorized
 
 instance YesodAuthPersist App
 

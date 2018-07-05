@@ -1,7 +1,7 @@
 # Values formatted like "_env:ENV_VAR_NAME:default_value" can be overridden by the specified environment variable.
 # See https://github.com/yesodweb/yesod/wiki/Configuration#overriding-configuration-values-with-environment-variables
 
-static-dir:     "_env:STATIC_DIR:static"
+# static-dir:     "_env:STATIC_DIR:static"
 host:           "_env:HOST:*4" # any IPv4 host
 port:           "_env:PORT:3000" # NB: The port `yesod devel` uses is distinct from this value. Set the `yesod devel` port from the command line.
 ip-from-header: "_env:IP_FROM_HEADER:false"
