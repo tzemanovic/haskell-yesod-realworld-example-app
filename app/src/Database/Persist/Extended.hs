@@ -4,6 +4,7 @@ module Database.Persist.Extended
   , maybeUpdate
   ) where
 
+import           ClassyPrelude.Yesod
 import           Database.Persist
 import           Database.Persist.Types.Email
 

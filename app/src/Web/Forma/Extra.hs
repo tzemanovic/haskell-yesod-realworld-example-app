@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Web.Forma.Extra
   ( module Web.Forma
     -- * Validation helpers
