@@ -54,9 +54,6 @@ data MenuTypes
 -- type Widget = WidgetT App IO ()
 mkYesodData "App" $(parseRoutesFile "config/routes")
 
--- | A convenient synonym for creating forms.
-type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
-
 -- | A convenient synonym for database access functions.
 type DB a = forall (m :: * -> *).
     (MonadIO m, Functor m) => ReaderT SqlBackend m a
@@ -111,10 +108,6 @@ instance Yesod App where
             || level == LevelError
 
     makeLogger = return . appLogger
-
--- Define breadcrumbs.
-instance YesodBreadcrumbs App where
-  breadcrumb  _ = return ("home", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where

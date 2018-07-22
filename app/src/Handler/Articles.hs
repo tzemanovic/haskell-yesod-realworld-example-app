@@ -28,7 +28,7 @@ import           Database.Persist.Sql      (toSqlKey)
 import           Import
 import           Pagination
 import           Test.QuickCheck.Gen       (elements, generate, listOf)
-import           Web.Forma.Extra
+import           Web.Forma.Extended
 
 
 --------------------------------------------------------------------------------

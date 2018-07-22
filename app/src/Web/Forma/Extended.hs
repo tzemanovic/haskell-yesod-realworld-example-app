@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.Forma.Extra
+module Web.Forma.Extended
   ( module Web.Forma
     -- * Validation helpers
   , notEmpty
@@ -15,8 +15,7 @@ import           Data.Aeson                (object)
 import qualified Data.HashMap.Strict       as HM
 import qualified Data.Map.Strict           as M
 import qualified Data.Text                 as T
-import           Import                    hiding (Form, FormResult, foldr,
-                                            path)
+import           Import                    hiding (FormResult, foldr, path)
 import           Network.HTTP.Types.Status (status422)
 import           Prelude                   (foldr)
 import           Web.Forma

@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a053d65c991f103d3144c4919a3c91e717d9e11d01ef68c0d10755631632a670
+-- hash: d5e8dc02d47de4577ec030542e4a326d26d25c31619ce7ce5dca0ad5817e87a9
 
 name:           app
 version:        0.0.0
@@ -35,7 +35,7 @@ library
       Model
       Pagination
       Settings
-      Web.Forma.Extra
+      Web.Forma.Extended
   hs-source-dirs:
       src
   build-depends:

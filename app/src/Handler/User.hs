@@ -14,8 +14,8 @@ module Handler.User
 import           Control.Monad.Except          (ExceptT, throwError)
 import           Data.Aeson                    (object)
 import           Database.Persist.Extended
-import           Import                        hiding (Form, FormResult)
-import           Web.Forma.Extra
+import           Import                        hiding (FormResult)
+import           Web.Forma.Extended
 import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 
 
