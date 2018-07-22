@@ -1,3 +1,6 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Handler.ProfilesSpec (spec) where
 
 import           Data.Aeson
@@ -72,6 +75,8 @@ spec = withApp $ do
             otherRawEmail = "lambda@bar.com" :: Text
             otherEmail = Email $ CI.mk otherRawEmail
             otherPassword = "something" :: Text
+        -- _ <- insertUser username email password
+        -- _ <- insertUser otherUsername otherEmail otherPassword
         userId <- insertUser username email password
         otherUserId <- insertUser otherUsername otherEmail otherPassword
         _ <- runDB $ insert UserFollower

@@ -1,13 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+
 module Database.Persist.Types.Email.Internal
   ( Email(..)
   , mkEmail
   ) where
 
-import           ClassyPrelude.Yesod
+import           Data.Aeson
 import           Data.CaseInsensitive (CI)
 import qualified Data.CaseInsensitive as CI
+import           Data.Monoid          ((<>))
 import           Data.Text            (Text)
 import qualified Data.Text            as T
+import           Data.Text.Encoding
+import           Database.Persist
 import           Database.Persist.Sql (PersistFieldSql (..))
 import qualified Text.Email.Validate  as Email
 
@@ -30,11 +36,11 @@ instance PersistField Email where
       Just email ->
         Right email
       _ ->
-        Left $ modulePath <> "Deserialized invalid email address: " <> text
+        Left $ path <> "Deserialized invalid email address: " <> text
 
   fromPersistValue x =
     Left $
-    modulePath <>
+    path <>
     "When trying to deserialize Email: expected PersistText, received: " <>
     T.pack (show x)
 
@@ -44,5 +50,5 @@ instance PersistFieldSql Email where
 instance ToJSON Email where
   toJSON Email {..} = String $ CI.original unEmail
 
-modulePath :: Text
-modulePath = "Database/Persist/Types/Email/Internal.hs: "
+path :: Text
+path = "Database/Persist/Types/Email/Internal.hs: "
