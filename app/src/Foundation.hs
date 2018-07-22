@@ -157,12 +157,12 @@ getUserId username = do
   mUser <- runDB $ getBy $ UniqueUserUsername username
   case mUser of
     Just (Entity userId _) -> return $ Just userId
-    _                      ->                      return Nothing
+    _                      -> return Nothing
 
 extractToken :: Text -> Maybe Text
 extractToken auth
   | toLower x == "token" = Just $ dropWhile isSpace y
-  | otherwise                       = Nothing
+  | otherwise            = Nothing
   where (x, y) = break isSpace auth
 
 usernameToJwtToken :: MonadReader App m => Text -> m Text
