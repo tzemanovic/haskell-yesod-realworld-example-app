@@ -103,15 +103,10 @@ postArticlesR = do
 
     articleId <- runDB $ insert article
 
-    _ <-
-      forM_ createArticleTagList $
+    forM_ createArticleTagList $
       mapM_ $ \tag -> do
-        mTag <- runDB $ getBy $ UniqueTagName tag
-        tagId <- case mTag of
-            Just (Entity tagId _) -> return tagId
-            _                     -> runDB $ insert $ Tag tag
-        _ <- runDB $ insert $ ArticleTag articleId tagId
-        return ()
+        Entity tagId _ <- runDB $ upsert (Tag tag) []
+        runDB $ insert_ $ ArticleTag articleId tagId
 
     getArticle articleId
 
