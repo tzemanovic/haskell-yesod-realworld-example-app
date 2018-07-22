@@ -1,9 +1,12 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Database.Persist.Extended
   ( module Database.Persist
   , module Database.Persist.Types.Email
   , maybeUpdate
   ) where
 
+import           ClassyPrelude.Yesod
 import           Database.Persist
 import           Database.Persist.Types.Email
 
