@@ -10,7 +10,7 @@
 
 module Foundation where
 
-import           Data.Char            (isSpace)
+import qualified Auth
 import           Data.Map             as Map (fromList, (!?))
 import           Database.Persist.Sql (ConnectionPool, runSqlPool)
 import           Import.NoFoundation
@@ -29,16 +29,6 @@ data App = App
     , appHttpManager :: Manager
     , appLogger      :: Logger
     }
-
-data MenuItem = MenuItem
-    { menuItemLabel          :: Text
-    , menuItemRoute          :: Route App
-    , menuItemAccessCallback :: Bool
-    }
-
-data MenuTypes
-    = NavbarLeft MenuItem
-    | NavbarRight MenuItem
 
 -- This is where we define all of the routes in our application. For a full
 -- explanation of the syntax, please see:
@@ -115,6 +105,7 @@ instance YesodPersist App where
     runDB action = do
         master <- getYesod
         runSqlPool action $ appConnPool master
+
 instance YesodPersistRunner App where
     getDBRunner = defaultGetDBRunner appConnPool
 
@@ -136,52 +127,6 @@ instance YesodAuth App where
       maybe (UserError AuthMsg.InvalidLogin) Authenticated <$> maybeAuthId
 
     maybeAuthId = jwtAuthId
-
-
-jwtAuthId :: Handler (Maybe UserId)
-jwtAuthId = do
-  mAuth <- lookupHeader "Authorization"
-  case extractToken . decodeUtf8 =<< mAuth of
-    Just token -> tokenToUserId token
-    _          -> return Nothing
-
-tokenToUserId :: Text -> Handler (Maybe UserId)
-tokenToUserId token = do
-  mUsername <- jwtTokenToUsername token
-  case mUsername of
-    Just username -> getUserId username
-    _             -> return Nothing
-
-getUserId :: Text -> Handler (Maybe UserId)
-getUserId username = do
-  mUser <- runDB $ getBy $ UniqueUserUsername username
-  case mUser of
-    Just (Entity userId _) -> return $ Just userId
-    _                      -> return Nothing
-
-extractToken :: Text -> Maybe Text
-extractToken auth
-  | toLower x == "token" = Just $ dropWhile isSpace y
-  | otherwise            = Nothing
-  where (x, y) = break isSpace auth
-
-usernameToJwtToken :: MonadReader App m => Text -> m Text
-usernameToJwtToken username = do
-  jwtSecret <- getJwtSecret
-  return $ encodeSigned HS256 jwtSecret
-    def {unregisteredClaims = Map.fromList [("username", String username)]}
-
-jwtTokenToUsername :: MonadReader App m => Text -> m (Maybe Text)
-jwtTokenToUsername token = do
-  jwtSecret <- getJwtSecret
-  return $ do
-    jwt             <- JWT.decodeAndVerifySignature jwtSecret token
-    String username <- JWT.unregisteredClaims (JWT.claims jwt) !? "username"
-    return username
-
-getJwtSecret :: MonadReader App m => m JWT.Secret
-getJwtSecret =
-  JWT.secret . appJwtSecret . appSettings <$> ask
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
@@ -214,3 +159,38 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+
+jwtAuthId :: Handler (Maybe UserId)
+jwtAuthId = do
+  mToken <- Auth.lookupToken
+  maybe (return Nothing) tokenToUserId mToken
+
+usernameToJwtToken :: MonadReader App m => Text -> m Text
+usernameToJwtToken username = do
+  jwtSecret <- getJwtSecret
+  return $ encodeSigned HS256 jwtSecret
+    def {unregisteredClaims = Map.fromList [("username", String username)]}
+
+jwtTokenToUsername :: MonadReader App m => Text -> m (Maybe Text)
+jwtTokenToUsername token = do
+  jwtSecret <- getJwtSecret
+  return $ do
+    jwt             <- JWT.decodeAndVerifySignature jwtSecret token
+    String username <- JWT.unregisteredClaims (JWT.claims jwt) !? "username"
+    return username
+
+getJwtSecret :: MonadReader App m => m JWT.Secret
+getJwtSecret =
+  JWT.secret . appJwtSecret . appSettings <$> ask
+
+tokenToUserId :: Text -> Handler (Maybe UserId)
+tokenToUserId token = do
+  mUsername <- jwtTokenToUsername token
+  maybe (return Nothing) usernameToUserId mUsername
+
+usernameToUserId :: Text -> Handler (Maybe UserId)
+usernameToUserId username = do
+  mUser <- runDB $ getBy $ UniqueUserUsername username
+  return $ case mUser of
+      Just (Entity userId _) -> Just userId
+      _ -> Nothing

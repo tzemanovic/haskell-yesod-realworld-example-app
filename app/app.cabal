@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d5e8dc02d47de4577ec030542e4a326d26d25c31619ce7ce5dca0ad5817e87a9
+-- hash: 82f93db79089abd151f3dab6f44b9de739605607915ce2a4fb7a2570a7b8428d
 
 name:           app
 version:        0.0.0
@@ -22,6 +22,7 @@ flag library-only
 library
   exposed-modules:
       Application
+      Auth
       Database
       Database.Persist.Extended
       Database.Persist.Types.Email
