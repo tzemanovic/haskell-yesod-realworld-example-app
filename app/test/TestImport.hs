@@ -87,7 +87,7 @@ getJsonResponse =
       Just (Success a) -> return a
       _ -> lift $ assertFailure $ "cannot decode JSON: " ++ C.unpack simpleBody
 
--- | Build a request that gets a JWT token for a given username and uses it
+-- | Build a request that gets a JWT token for a given user ID and uses it
 -- to set the request's authentication header.
 authenticatedRequest :: UserId -> RequestBuilder App () -> YesodExample App ()
 authenticatedRequest userId reqBuilder = do
