@@ -10,11 +10,10 @@
 
 module Foundation where
 
-import qualified Auth
-import           Data.Map             as Map (fromList, (!?))
+import qualified Auth.JWT             as JWT
+import           Data.Aeson           (Result (Success), fromJSON)
 import           Database.Persist.Sql (ConnectionPool, runSqlPool)
 import           Import.NoFoundation
-import           Web.JWT              as JWT
 import qualified Yesod.Auth.Message   as AuthMsg
 import           Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe    as Unsafe
@@ -126,7 +125,9 @@ instance YesodAuth App where
     authenticate _ =
       maybe (UserError AuthMsg.InvalidLogin) Authenticated <$> maybeAuthId
 
-    maybeAuthId = jwtAuthId
+    maybeAuthId = do
+      mToken <- JWT.lookupToken
+      maybe (return Nothing) tokenToUserId mToken
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
@@ -160,37 +161,14 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
 
-jwtAuthId :: Handler (Maybe UserId)
-jwtAuthId = do
-  mToken <- Auth.lookupToken
-  maybe (return Nothing) tokenToUserId mToken
-
-usernameToJwtToken :: MonadReader App m => Text -> m Text
-usernameToJwtToken username = do
-  jwtSecret <- getJwtSecret
-  return $ encodeSigned HS256 jwtSecret
-    def {unregisteredClaims = Map.fromList [("username", String username)]}
-
-jwtTokenToUsername :: MonadReader App m => Text -> m (Maybe Text)
-jwtTokenToUsername token = do
-  jwtSecret <- getJwtSecret
-  return $ do
-    jwt             <- JWT.decodeAndVerifySignature jwtSecret token
-    String username <- JWT.unregisteredClaims (JWT.claims jwt) !? "username"
-    return username
-
-getJwtSecret :: MonadReader App m => m JWT.Secret
-getJwtSecret =
-  JWT.secret . appJwtSecret . appSettings <$> ask
-
 tokenToUserId :: Text -> Handler (Maybe UserId)
 tokenToUserId token = do
-  mUsername <- jwtTokenToUsername token
-  maybe (return Nothing) usernameToUserId mUsername
+  jwtSecret <- getJwtSecret
+  let mUserId = JWT.tokenToUserId jwtSecret token
+  case fromJSON <$> mUserId of
+    Just (Success userId) -> return $ Just userId
+    _                     -> return Nothing
 
-usernameToUserId :: Text -> Handler (Maybe UserId)
-usernameToUserId username = do
-  mUser <- runDB $ getBy $ UniqueUserUsername username
-  return $ case mUser of
-      Just (Entity userId _) -> Just userId
-      _ -> Nothing
+getJwtSecret :: HandlerT App IO Text
+getJwtSecret =
+  appJwtSecret . appSettings <$> ask

@@ -73,8 +73,8 @@ instance ToJSON CommentData where
 -- Queries
 
 getArticle ::
-  Maybe (Key User)
-  -> Key Article
+  Maybe UserId
+  -> ArticleId
   -> Handler (Maybe ArticleData)
 getArticle mCurrentUserId articleId = do
   articles <- getArticles mCurrentUserId $ \article _ _ ->
@@ -82,7 +82,7 @@ getArticle mCurrentUserId articleId = do
   return $ head <$> fromNullable articles
 
 getGlobalArticleFeed ::
-  Maybe (Key User)
+  Maybe UserId
   -> Maybe Text
   -> Maybe Text
   -> Maybe Text
@@ -127,7 +127,7 @@ getGlobalArticleFeed mCurrentUserId mTag mAuthor mFavoritedBy page = do
     clause
 
 getUserArticleFeed ::
-  Maybe (Key User)
+  Maybe UserId
   -> Page
   -> Handler ([ArticleData], Int)
 getUserArticleFeed mCurrentUserId page = do
@@ -142,8 +142,8 @@ getUserArticleFeed mCurrentUserId page = do
     clause
 
 getComment ::
-  Maybe (Key User)
-  -> Key ArticleComment
+  Maybe UserId
+  -> ArticleCommentId
   -> Handler (Maybe CommentData)
 getComment mCurrentUserId commentId = do
   comments <- Database.getComments mCurrentUserId $ \comment _ ->
@@ -151,7 +151,7 @@ getComment mCurrentUserId commentId = do
   return $ head <$> fromNullable comments
 
 getCommentsByArticleSlug ::
-  Maybe (Key User)
+  Maybe UserId
   -> Text
   -> Handler [CommentData]
 getCommentsByArticleSlug mCurrentUserId slug =
@@ -182,7 +182,7 @@ paginateArticles query countQuery page clause = do
   return (articles, articleCount)
 
 getArticlesCount ::
-  Maybe (Key User)
+  Maybe UserId
   -> ArticleClause
   -> Handler [Value Int]
 getArticlesCount mCurrentUserId extraClause =
@@ -202,7 +202,7 @@ getArticlesCount mCurrentUserId extraClause =
     return countRows
 
 getArticles ::
-  Maybe (Key User)
+  Maybe UserId
   -> ArticleClause
   -> Handler [ArticleData]
 getArticles mCurrentUserId extraClause = do
@@ -241,7 +241,7 @@ getArticles mCurrentUserId extraClause = do
   mapM addTags articles
 
 getComments ::
-  Maybe (Key User)
+  Maybe UserId
   -> (SqlExpr (Entity ArticleComment)
        -> SqlExpr (Entity Article)
        -> SqlQuery ()
@@ -267,7 +267,7 @@ getComments mCurrentUserId extraClause = do
 
   return $ CommentData <$> comments
 
-getArticleTags :: Key Article -> Handler [Value Text]
+getArticleTags :: ArticleId -> Handler [Value Text]
 getArticleTags articleId =
     runDB $
     select $

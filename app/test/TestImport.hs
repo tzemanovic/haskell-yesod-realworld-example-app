@@ -8,6 +8,7 @@ module TestImport
     ) where
 
 import           Application                   (makeFoundation, makeLogWare)
+import           Auth
 import           ClassyPrelude                 as X hiding (Handler, delete,
                                                      deleteBy)
 import           Data.Aeson                    (FromJSON, Result (..), decode,
@@ -64,7 +65,7 @@ withApp = before $ do
     return (foundation, logWare)
 
 -- | Insert a user into the DB.
-insertUser :: Text -> Email -> Text -> YesodExample App (Key User)
+insertUser :: Text -> Email -> Text -> YesodExample App UserId
 insertUser username email password = do
   pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
   now <- liftIO getCurrentTime
@@ -88,9 +89,9 @@ getJsonResponse =
 
 -- | Build a request that gets a JWT token for a given username and uses it
 -- to set the request's authentication header.
-authenticatedRequest :: Text -> RequestBuilder App () -> YesodExample App ()
-authenticatedRequest username reqBuilder = do
-  token <- runHandler $ usernameToJwtToken username
+authenticatedRequest :: UserId -> RequestBuilder App () -> YesodExample App ()
+authenticatedRequest userId reqBuilder = do
+  token <- runHandler $ Auth.userIdToToken userId
   request $ do
     addRequestHeader (hAuthorization, "token " ++ encodeUtf8 token)
     reqBuilder

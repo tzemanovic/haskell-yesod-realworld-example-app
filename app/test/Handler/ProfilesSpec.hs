@@ -46,7 +46,7 @@ spec = withApp $ do
               { userFollowerUser = otherUserId
               , userFollowerFollower = userId
               }
-        authenticatedRequest username $ do
+        authenticatedRequest userId $ do
           setMethod "GET"
           setUrl $ ProfilesR otherUsername
 
@@ -64,8 +64,8 @@ spec = withApp $ do
     describe "postFollowR" $ do
 
       it "trying to follow non-existing user profile fails gracefully" $ do
-        _ <- insertUser username email password
-        authenticatedRequest username $ do
+        userId <- insertUser username email password
+        authenticatedRequest userId $ do
           setMethod "POST"
           setUrl $ FollowR "lambda"
         statusIs 404
@@ -81,7 +81,7 @@ spec = withApp $ do
               { userFollowerUser = otherUserId
               , userFollowerFollower = userId
               }
-        authenticatedRequest username $ do
+        authenticatedRequest userId $ do
           setMethod "POST"
           setUrl $ FollowR otherUsername
 
@@ -99,8 +99,8 @@ spec = withApp $ do
     describe "deleteFollowR" $ do
 
       it "trying to unfollow non-existing user profile fails gracefully" $ do
-        _ <- insertUser username email password
-        authenticatedRequest username $ do
+        userId <- insertUser username email password
+        authenticatedRequest userId $ do
           setMethod "DELETE"
           setUrl $ FollowR "lambda"
         statusIs 404
@@ -116,7 +116,7 @@ spec = withApp $ do
               { userFollowerUser = otherUserId
               , userFollowerFollower = userId
               }
-        authenticatedRequest username $ do
+        authenticatedRequest userId $ do
           setMethod "DELETE"
           setUrl $ FollowR otherUsername
 

@@ -11,6 +11,7 @@ module Handler.User
   , putUserR
   ) where
 
+import qualified Auth
 import           Control.Monad.Except          (ExceptT, throwError)
 import           Data.Aeson                    (object)
 import           Database.Persist.Extended
@@ -41,8 +42,8 @@ postUsersLoginR =
     mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
     case mUser of
 
-      Just (Entity _ user@User {userPassword = pwdHash}) | validPwd ->
-        encodeUser user
+      Just (Entity userId user@User {userPassword = pwdHash}) | validPwd ->
+        encodeUser userId user
         where validPwd = verifyPwd loginPassword pwdHash
 
       _ ->
@@ -73,8 +74,8 @@ postUsersRegisterR =
     now <- liftIO getCurrentTime
     let user = User registerEmail registerUsername pwdHash "" defaultUserImage
                     now now
-    _ <- runDB $ insert user
-    encodeUser user
+    userId <- runDB $ insert user
+    encodeUser userId user
 
 --------------------------------------------------------------------------------
 -- Get current user
@@ -83,7 +84,7 @@ getUserR :: Handler Value
 getUserR = do
   Just userId <- maybeAuthId
   Just user <- runDB $ get userId
-  encodeUser user
+  encodeUser userId user
 
 --------------------------------------------------------------------------------
 -- Update current user
@@ -130,7 +131,7 @@ putUserR = do
             , maybeUpdate UserUpdatedAt (Just now)
             ]
     updatedUser <- runDB $ updateGet userId updates
-    encodeUser updatedUser
+    encodeUser userId updatedUser
 
 --------------------------------------------------------------------------------
 -- Input validations
@@ -182,9 +183,9 @@ verifyPwd password pwdHash =
   verifyPassword (encodeUtf8 password) $ encodeUtf8 pwdHash
 
 -- | Encode a 'User' with a JWT authentication token.
-encodeUser :: User -> Handler Value
-encodeUser User {..} = do
-  token <- usernameToJwtToken userUsername
+encodeUser :: UserId -> User -> Handler Value
+encodeUser userId User {..} = do
+  token <- Auth.userIdToToken userId
   return $ object
     [ "user" .= object
         [ "email" .= userEmail

@@ -189,7 +189,7 @@ deleteArticleR slug = do
     _  ->
       notFound
 
-deleteArticle :: Key Article -> Handler Value
+deleteArticle :: ArticleId -> Handler Value
 deleteArticle articleId = do
   runDB $ deleteCascade articleId
   return Null
@@ -303,7 +303,7 @@ getTagsR = do
 --------------------------------------------------------------------------------
 -- Helpers
 
-getArticle :: Key Article -> Handler Value
+getArticle :: ArticleId -> Handler Value
 getArticle articleId = do
   mCurrentUserId <- maybeAuthId
   mArticle <- Database.getArticle mCurrentUserId articleId
@@ -311,7 +311,7 @@ getArticle articleId = do
     Just article -> return $ object ["article" .= article]
     _            -> notFound
 
-getComment :: Key ArticleComment -> Handler Value
+getComment :: ArticleCommentId -> Handler Value
 getComment commentId = do
   mUserId <- maybeAuthId
   mComment <- Database.getComment mUserId  commentId

@@ -154,8 +154,8 @@ spec = withApp $ do
         statusIs 403
 
       it "get current user" $ do
-        _ <- insertUser username email password
-        authenticatedRequest username $ do
+        userId <- insertUser username email password
+        authenticatedRequest userId $ do
           setMethod "GET"
           setUrl UserR
         statusIs 200
@@ -167,9 +167,9 @@ spec = withApp $ do
             otherRawEmail = "taken@bar.com" :: Text
             otherEmail = Email $ CI.mk otherRawEmail
             otherPassword = "something" :: Text
-        _ <- insertUser username email password
+        userId <- insertUser username email password
         _ <- insertUser otherUsername otherEmail otherPassword
-        authenticatedRequest username $ do
+        authenticatedRequest userId $ do
           setMethod "PUT"
           setUrl UserR
           setRequestBody $ encode $ object
@@ -182,8 +182,8 @@ spec = withApp $ do
       it "update user" $ do
         let newUsername = "new username" :: Text
             newBio = "In id erat non orci commodo lobortis." :: Text
-        _ <- insertUser username email password
-        authenticatedRequest username $ do
+        userId <- insertUser username email password
+        authenticatedRequest userId $ do
           setMethod "PUT"
           setUrl UserR
           setRequestBody $ encode $ object
