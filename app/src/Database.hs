@@ -11,12 +11,14 @@ module Database
   , getUserArticleFeed
   , getComment
   , getCommentsByArticleSlug
+  -- * Helpers
+  , encodeProfile
   ) where
 
 import           ClassyPrelude.Yesod hiding (Value, isNothing, on, (==.))
+import qualified Data.Aeson as JSON
 import           Database.Esqueleto
 import           Foundation
-import           Handler.Profiles    (encodeProfile)
 import           Model
 import           Pagination
 
@@ -160,6 +162,15 @@ getCommentsByArticleSlug mCurrentUserId slug =
 
 --------------------------------------------------------------------------------
 -- Helpers
+
+encodeProfile :: User -> Bool -> JSON.Value
+encodeProfile User {..} following =
+  object
+    [ "username" .= userUsername
+    , "bio" .= userBio
+    , "image" .= userImage
+    , "following" .= following
+    ]
 
 type ArticleClause
    = SqlExpr (Entity Article)

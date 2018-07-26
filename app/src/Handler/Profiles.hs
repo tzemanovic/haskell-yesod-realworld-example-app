@@ -1,15 +1,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 
 module Handler.Profiles
   ( getProfilesR
   , postFollowR
   , deleteFollowR
-  , encodeProfile
   ) where
 
 import           Data.Aeson
+import qualified Database
 import           Import
 
 
@@ -25,16 +24,7 @@ getProfilesR username = do
       (return False)
       (map isJust . runDB . getBy . UniqueUserFollower userId)
       mCurrentUserId
-  return $ object ["profile" .= encodeProfile user following]
-
-encodeProfile :: User -> Bool -> Value
-encodeProfile User {..} following =
-  object
-    [ "username" .= userUsername
-    , "bio" .= userBio
-    , "image" .= userImage
-    , "following" .= following
-    ]
+  return $ object ["profile" .= Database.encodeProfile user following]
 
 --------------------------------------------------------------------------------
 -- Follow User
