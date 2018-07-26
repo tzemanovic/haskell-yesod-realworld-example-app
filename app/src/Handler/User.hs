@@ -11,7 +11,6 @@ module Handler.User
   , putUserR
   ) where
 
-import qualified Auth
 import           Control.Monad.Except          (ExceptT, throwError)
 import           Data.Aeson                    (object)
 import           Database.Persist.Extended
@@ -185,7 +184,7 @@ verifyPwd password pwdHash =
 -- | Encode a 'User' with a JWT authentication token.
 encodeUser :: UserId -> User -> Handler Value
 encodeUser userId User {..} = do
-  token <- Auth.userIdToToken userId
+  token <- userIdToToken userId
   return $ object
     [ "user" .= object
         [ "email" .= userEmail

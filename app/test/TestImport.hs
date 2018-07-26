@@ -8,7 +8,6 @@ module TestImport
     ) where
 
 import           Application                   (makeFoundation, makeLogWare)
-import           Auth
 import           ClassyPrelude                 as X hiding (Handler, delete,
                                                      deleteBy)
 import           Data.Aeson                    (FromJSON, Result (..), decode,
@@ -91,7 +90,7 @@ getJsonResponse =
 -- to set the request's authentication header.
 authenticatedRequest :: UserId -> RequestBuilder App () -> YesodExample App ()
 authenticatedRequest userId reqBuilder = do
-  token <- runHandler $ Auth.userIdToToken userId
+  token <- runHandler $ userIdToToken userId
   request $ do
     addRequestHeader (hAuthorization, "token " ++ encodeUtf8 token)
     reqBuilder

@@ -3,8 +3,8 @@
 
 module Auth.JWT
   ( lookupToken
-  , userIdToToken
-  , tokenToUserId
+  , jsonToToken
+  , tokenToJson
   )
   where
 
@@ -25,12 +25,15 @@ extractToken auth
   | otherwise            = Nothing
   where (x, y) = break isSpace auth
 
-userIdToToken :: Text -> Value -> Text
-userIdToToken jwtSecret userId =
+jsonToToken :: Text -> Value -> Text
+jsonToToken jwtSecret userId =
   encodeSigned HS256 (JWT.secret jwtSecret)
-    def {unregisteredClaims = Map.fromList [("userId", userId)]}
+    def {unregisteredClaims = Map.fromList [(jwtKey, userId)]}
 
-tokenToUserId :: Text -> Text -> Maybe Value
-tokenToUserId jwtSecret token = do
+tokenToJson :: Text -> Text -> Maybe Value
+tokenToJson jwtSecret token = do
     jwt <- JWT.decodeAndVerifySignature (JWT.secret jwtSecret) token
-    JWT.unregisteredClaims (JWT.claims jwt) !? "userId"
+    JWT.unregisteredClaims (JWT.claims jwt) !? jwtKey
+
+jwtKey :: Text
+jwtKey = "jwt"

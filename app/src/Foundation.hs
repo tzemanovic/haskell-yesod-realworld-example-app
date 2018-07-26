@@ -161,11 +161,16 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
 
+userIdToToken :: UserId -> HandlerT App IO Text
+userIdToToken userId = do
+  jwtSecret <- getJwtSecret
+  return $ JWT.jsonToToken jwtSecret $ toJSON userId
+
 tokenToUserId :: Text -> Handler (Maybe UserId)
 tokenToUserId token = do
   jwtSecret <- getJwtSecret
-  let mUserId = JWT.tokenToUserId jwtSecret token
-  case fromJSON <$> mUserId of
+  let mUserId = fromJSON <$> JWT.tokenToJson jwtSecret token
+  case mUserId of
     Just (Success userId) -> return $ Just userId
     _                     -> return Nothing
 
