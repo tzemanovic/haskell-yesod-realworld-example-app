@@ -104,7 +104,7 @@ makeApplication foundation = do
 corsified :: [Text] -> Middleware
 corsified = cors . const . Just . appCorsResourcePolicy
 
--- | Cors resource policy to be used with 'corsified' middleware.
+-- | CORS resource policy to be used with 'corsified' middleware.
 appCorsResourcePolicy :: [Text] -> CorsResourcePolicy
 appCorsResourcePolicy corsWhitelist = CorsResourcePolicy {
     corsOrigins        = Just (encodeUtf8 <$> corsWhitelist, False)

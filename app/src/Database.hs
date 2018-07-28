@@ -5,14 +5,13 @@
 module Database
   ( ArticleData(..)
   , CommentData(..)
+  , encodeProfile
   -- * Queries
   , getArticle
   , getGlobalArticleFeed
   , getUserArticleFeed
   , getComment
   , getCommentsByArticleSlug
-  -- * Helpers
-  , encodeProfile
   ) where
 
 import           ClassyPrelude.Yesod hiding (Value, isNothing, on, (==.))
@@ -71,9 +70,19 @@ instance ToJSON CommentData where
       , "author" .= encodeProfile author following
       ]
 
+encodeProfile :: User -> Bool -> JSON.Value
+encodeProfile User {..} following =
+  object
+    [ "username" .= userUsername
+    , "bio" .= userBio
+    , "image" .= userImage
+    , "following" .= following
+    ]
+
 --------------------------------------------------------------------------------
 -- Queries
 
+-- | Get article by ID.
 getArticle ::
   Maybe UserId
   -> ArticleId
@@ -83,6 +92,7 @@ getArticle mCurrentUserId articleId = do
     where_ $ article ^. ArticleId ==. val articleId
   return $ head <$> fromNullable articles
 
+-- | Get articles by tag, author or favorited by with pagination.
 getGlobalArticleFeed ::
   Maybe UserId
   -> Maybe Text
@@ -128,21 +138,23 @@ getGlobalArticleFeed mCurrentUserId mTag mAuthor mFavoritedBy page = do
     page
     clause
 
+-- | Get user's article feed by tag, author or favorited by with pagination.
 getUserArticleFeed ::
   Maybe UserId
   -> Page
   -> Handler ([ArticleData], Int)
-getUserArticleFeed mCurrentUserId page = do
+getUserArticleFeed userId page = do
   let
     clause _ _ following =
       where_ following
 
   paginateArticles
-    (getArticles mCurrentUserId)
-    (getArticlesCount mCurrentUserId)
+    (getArticles userId)
+    (getArticlesCount userId)
     page
     clause
 
+-- | Get article's comment by ID.
 getComment ::
   Maybe UserId
   -> ArticleCommentId
@@ -152,6 +164,7 @@ getComment mCurrentUserId commentId = do
     where_ $ comment ^. ArticleCommentId ==. val commentId
   return $ head <$> fromNullable comments
 
+-- | Get article's comments by article's slug.
 getCommentsByArticleSlug ::
   Maybe UserId
   -> Text
@@ -163,26 +176,18 @@ getCommentsByArticleSlug mCurrentUserId slug =
 --------------------------------------------------------------------------------
 -- Helpers
 
-encodeProfile :: User -> Bool -> JSON.Value
-encodeProfile User {..} following =
-  object
-    [ "username" .= userUsername
-    , "bio" .= userBio
-    , "image" .= userImage
-    , "following" .= following
-    ]
-
 type ArticleClause
-   = SqlExpr (Entity Article)
-     -> SqlExpr (Entity User)
-     -> SqlExpr (Value Bool)
+   = SqlExpr (Entity Article) -- ^ article
+     -> SqlExpr (Entity User) -- ^ article's author
+     -> SqlExpr (Value Bool)  -- ^ is current user following author
      -> SqlQuery ()
 
+-- | Paginate articles produced by a given query.
 paginateArticles :: Monad m
-  => (ArticleClause -> m articles)
-  -> (ArticleClause -> m [Value articlesCount])
-  -> Page
-  -> ArticleClause
+  => (ArticleClause -> m articles)              -- ^ articles query
+  -> (ArticleClause -> m [Value articlesCount]) -- ^ count query
+  -> Page                                       -- ^ page settings
+  -> ArticleClause                              -- ^ clause used in both queries
   -> m (articles, articlesCount)
 paginateArticles query countQuery page clause = do
   [Value articleCount] <- countQuery clause
@@ -192,6 +197,7 @@ paginateArticles query countQuery page clause = do
       paginate page
   return (articles, articleCount)
 
+-- | Get articles count for a given clause.
 getArticlesCount ::
   Maybe UserId
   -> ArticleClause
@@ -212,6 +218,7 @@ getArticlesCount mCurrentUserId extraClause =
     extraClause article author following
     return countRows
 
+-- | Get articles for a given clause.
 getArticles ::
   Maybe UserId
   -> ArticleClause
@@ -251,13 +258,13 @@ getArticles mCurrentUserId extraClause = do
 
   mapM addTags articles
 
-getComments ::
-  Maybe UserId
-  -> (SqlExpr (Entity ArticleComment)
-       -> SqlExpr (Entity Article)
-       -> SqlQuery ()
-     )
-  -> Handler [CommentData]
+type CommentClause
+   = SqlExpr (Entity ArticleComment) -- ^ comment
+      -> SqlExpr (Entity Article)    -- ^ article this comment belongs to
+      -> SqlQuery ()
+
+-- | Get comments for a given clause.
+getComments :: Maybe UserId -> CommentClause -> Handler [CommentData]
 getComments mCurrentUserId extraClause = do
   comments <-
     runDB $
@@ -278,6 +285,7 @@ getComments mCurrentUserId extraClause = do
 
   return $ CommentData <$> comments
 
+-- | Get article tags by article ID.
 getArticleTags :: ArticleId -> Handler [Value Text]
 getArticleTags articleId =
     runDB $

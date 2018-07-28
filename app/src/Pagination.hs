@@ -19,6 +19,7 @@ data Page = Page
   , pageOffset :: !Int64
   }
 
+-- | Lookup page parameters from GET query.
 lookupPageParams :: Handler Page
 lookupPageParams = do
   mOffset <- lookupGetParam "offset"
@@ -36,6 +37,7 @@ paginate Page {..} = do
 
 --------------------------------------------------------------------------------
 
+-- | Try to parse a decimal number, use the default value if not a number.
 decimalWithDefault :: Integral p => Maybe Text -> p -> p
 decimalWithDefault x default' =
   case decimal <$> x of

@@ -19,17 +19,13 @@ lookupToken = do
   mAuth <- lookupHeader "Authorization"
   return $ extractToken . decodeUtf8 =<< mAuth
 
-extractToken :: Text -> Maybe Text
-extractToken auth
-  | toLower x == "token" = Just $ dropWhile isSpace y
-  | otherwise            = Nothing
-  where (x, y) = break isSpace auth
-
+-- | Create a token out of a given JSON 'Value'
 jsonToToken :: Text -> Value -> Text
 jsonToToken jwtSecret userId =
   encodeSigned HS256 (JWT.secret jwtSecret)
     def {unregisteredClaims = Map.fromList [(jwtKey, userId)]}
 
+-- | Extract a JSON 'Value' out of a token
 tokenToJson :: Text -> Text -> Maybe Value
 tokenToJson jwtSecret token = do
     jwt <- JWT.decodeAndVerifySignature (JWT.secret jwtSecret) token
@@ -37,3 +33,9 @@ tokenToJson jwtSecret token = do
 
 jwtKey :: Text
 jwtKey = "jwt"
+
+extractToken :: Text -> Maybe Text
+extractToken auth
+  | toLower x == "token" = Just $ dropWhile isSpace y
+  | otherwise            = Nothing
+  where (x, y) = break isSpace auth

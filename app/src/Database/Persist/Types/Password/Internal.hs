@@ -18,14 +18,15 @@ newtype Password = Password
   { unPassword :: Text }
   deriving (Show, Eq)
 
--- | Instantiate a 'Password' from 'Text' safely stored as a hash.
+-- | Instantiate a 'Password' from 'Text' safely stored as a hash
 mkPassword :: MonadIO m => Text -> m Password
 mkPassword text =
   Password . decodeUtf8 <$> liftIO (PS.makePassword (encodeUtf8 text) 14)
 
+-- | Check a raw password against DB password
 verifyPassword :: Text -> Password -> Bool
-verifyPassword password Password {..} =
-  PS.verifyPassword (encodeUtf8 password) $ encodeUtf8 unPassword
+verifyPassword rawPassword Password {..} =
+  PS.verifyPassword (encodeUtf8 rawPassword) $ encodeUtf8 unPassword
 
 instance PersistField Password where
   toPersistValue Password {..} = PersistText unPassword

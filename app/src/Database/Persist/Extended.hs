@@ -13,7 +13,7 @@ import           Database.Persist.Types.Email
 import           Database.Persist.Types.Password
 
 
--- | Update a given field if set.
+-- | Update a given field if the given value is set.
 maybeUpdate :: PersistField typ
   => EntityField v typ -> Maybe typ -> Maybe (Update v)
 maybeUpdate label =
