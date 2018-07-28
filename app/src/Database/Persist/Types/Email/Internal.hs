@@ -28,7 +28,7 @@ mkEmail email =
     else Nothing
 
 instance PersistField Email where
-  toPersistValue Email {unEmail = email} = PersistText $ CI.original email
+  toPersistValue Email {..} = PersistText $ CI.original unEmail
   fromPersistValue (PersistText text) =
     case mkEmail text of
       Just email ->

@@ -16,7 +16,6 @@ import           Data.Aeson                    (object)
 import           Database.Persist.Extended
 import           Import                        hiding (FormResult)
 import           Web.Forma.Extended
-import           Yesod.Auth.Util.PasswordStore (makePassword, verifyPassword)
 
 
 --------------------------------------------------------------------------------
@@ -41,9 +40,9 @@ postUsersLoginR =
     mUser <- runDB $ getBy $ UniqueUserEmail loginEmail
     case mUser of
 
-      Just (Entity userId user@User {userPassword = pwdHash}) | validPwd ->
+      Just (Entity userId user@User {..}) | validPwd ->
         encodeUser userId user
-        where validPwd = verifyPwd loginPassword pwdHash
+        where validPwd = verifyPassword loginPassword userPassword
 
       _ ->
         notAuthenticated
@@ -69,7 +68,7 @@ registerForm =
 postUsersRegisterR :: Handler Value
 postUsersRegisterR =
   withForm registerForm $ \Register {..} -> do
-    pwdHash <- mkPwd registerPassword
+    pwdHash <- mkPassword registerPassword
     now <- liftIO getCurrentTime
     let user = User registerEmail registerUsername pwdHash "" defaultUserImage
                     now now
@@ -118,7 +117,7 @@ putUserR = do
     now <- liftIO getCurrentTime
     pwdHash <-
       case updatePassword of
-        Just pwd -> Just <$> mkPwd pwd
+        Just pwd -> Just <$> mkPassword pwd
         _        -> return Nothing
     let updates =
           catMaybes
@@ -172,14 +171,6 @@ uniqueUsernameIfChanged currentUsername newUsername =
 
 defaultUserImage :: Text
 defaultUserImage = "https://static.productionready.io/images/smiley-cyrus.jpg"
-
-mkPwd :: MonadIO m => Text -> m Text
-mkPwd pwd =
-  decodeUtf8 <$> liftIO (makePassword (encodeUtf8 pwd) 14)
-
-verifyPwd :: Text -> Text -> Bool
-verifyPwd password pwdHash =
-  verifyPassword (encodeUtf8 password) $ encodeUtf8 pwdHash
 
 -- | Encode a 'User' with a JWT authentication token.
 encodeUser :: UserId -> User -> Handler Value

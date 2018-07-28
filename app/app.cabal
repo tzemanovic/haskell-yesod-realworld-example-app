@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 10db6957764b80b688be3407cc5559dd1c5579ca11d49d3c957cec71ed8287b7
+-- hash: 05ac69a6f59ba72586d5c77812e9d8ca302413cc551b422949d2c842f606ea89
 
 name:           app
 version:        0.0.0
@@ -27,6 +27,8 @@ library
       Database.Persist.Extended
       Database.Persist.Types.Email
       Database.Persist.Types.Email.Internal
+      Database.Persist.Types.Password
+      Database.Persist.Types.Password.Internal
       Foundation
       Handler.Articles
       Handler.Profiles

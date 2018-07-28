@@ -4,7 +4,7 @@
 User
     email Email
     username Text
-    password Text
+    password Password
     bio Text
     image Text
     createdAt UTCTime
