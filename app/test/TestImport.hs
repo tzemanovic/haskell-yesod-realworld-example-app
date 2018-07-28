@@ -37,7 +37,6 @@ import           Network.Wai.Test              (SResponse (..))
 import           Settings                      (appDatabaseConf)
 import           System.Environment            (setEnv)
 import           Test.HUnit                    as X (assertFailure)
-import           Yesod.Auth.Util.PasswordStore (makePassword)
 import           Yesod.Core                    (messageLoggerSource)
 
 runDB :: SqlPersistM a -> YesodExample App a
@@ -65,13 +64,13 @@ withApp = before $ do
 
 -- | Insert a user into the DB.
 insertUser :: Text -> Email -> Text -> YesodExample App UserId
-insertUser username email password = do
-  pwdHash <- liftIO $ makePassword (encodeUtf8 password) 14
+insertUser username email rawPassword = do
+  password <- mkPassword rawPassword
   now <- liftIO getCurrentTime
   runDB $ insert User
         { userEmail = email
         , userUsername = username
-        , userPassword = decodeUtf8 pwdHash
+        , userPassword = password
         , userBio = ""
         , userImage = ""
         , userCreatedAt = now
