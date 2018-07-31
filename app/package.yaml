@@ -21,6 +21,7 @@ dependencies:
 - esqueleto >= 2.5 
 - fast-logger >=2.2 && <2.5
 - file-embed
+- foreign-store
 - forma >= 1.1
 - http-types >= 0.9
 - jwt >= 0.7.2 && <0.8

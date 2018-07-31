@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 310d2c61410afb561b86be7bae11f3da10a0e93f67f0098b203ec98d8904024d
+-- hash: 5552c8f49924f662efd96fb67acfa48b10cc9837fba616b5747187fe12493599
 
 name:           app
 version:        0.0.1
@@ -55,6 +55,7 @@ library
     , esqueleto >=2.5
     , fast-logger >=2.2 && <2.5
     , file-embed
+    , foreign-store
     , forma >=1.1
     , http-types >=0.9
     , jwt >=0.7.2 && <0.8
@@ -106,6 +107,7 @@ executable app
     , esqueleto >=2.5
     , fast-logger >=2.2 && <2.5
     , file-embed
+    , foreign-store
     , forma >=1.1
     , http-types >=0.9
     , jwt >=0.7.2 && <0.8
@@ -157,6 +159,7 @@ test-suite test
     , esqueleto >=2.5
     , fast-logger >=2.2 && <2.5
     , file-embed
+    , foreign-store
     , forma >=1.1
     , hspec >=2.0.0
     , http-types >=0.9
