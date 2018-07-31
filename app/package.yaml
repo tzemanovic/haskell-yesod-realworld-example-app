@@ -15,19 +15,13 @@ dependencies:
 - bytestring >=0.9 && <0.11
 - case-insensitive
 - classy-prelude >=0.10.2
-- classy-prelude-conduit >=0.10.2
-- conduit >=1.0 && <2.0
 - containers
-- data-default
 - directory >=1.1 && <1.4
 - email-validate >= 2.3
 - esqueleto >= 2.5 
 - fast-logger >=2.2 && <2.5
 - file-embed
-- foreign-store
 - forma >= 1.1
-- hjsmin >=0.1 && <0.3
-- http-conduit >=2.1 && <2.3
 - http-types >= 0.9
 - jwt >= 0.7.2 && <0.8
 - monad-control >=0.3 && <1.1
@@ -36,13 +30,9 @@ dependencies:
 - persistent >=2.0 && <2.8
 - persistent-sqlite >=2.6.2 && <2.8
 - persistent-template >=2.0 && <2.8
-- safe
-- shakespeare >=2.0 && <2.1
 - template-haskell
 - text >=0.11 && <2.0
-- time
 - unordered-containers
-- vector
 - wai
 - wai-cors >= 0.2
 - wai-extra >=3.0 && <3.1
@@ -53,7 +43,6 @@ dependencies:
 - yesod >=1.4.3 && <1.5
 - yesod-auth >=1.4.0 && <1.5
 - yesod-core >=1.4.30 && <1.5
-- yesod-form >=1.4.0 && <1.5
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.
