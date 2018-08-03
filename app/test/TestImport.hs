@@ -3,51 +3,48 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 module TestImport
-    ( module TestImport
+    ( runDB
+    , withApp
+    , insertUser
+    , getJsonResponse
+    , authenticatedRequest
     , module X
     ) where
 
-import           Application                   (makeFoundation, makeLogWare)
-import           ClassyPrelude                 as X hiding (Handler, delete,
-                                                     deleteBy)
-import           Data.Aeson                    (FromJSON, Result (..), decode,
-                                                fromJSON)
-import           Database.Persist.Extended     as X hiding (get)
-import           Database.Persist.Sql          (SqlPersistM, connEscapeName,
-                                                rawExecute, rawSql,
-                                                runSqlPersistMPool, unSingle)
-import           Foundation                    as X
-import           Model                         as X
-import           Test.Hspec                    as X
-import           Yesod.Auth                    as X
-import           Yesod.Core.Unsafe             (fakeHandlerGetLogger)
-import           Yesod.Default.Config2         (loadYamlSettings, useEnv)
-import           Yesod.Test                    as X
+import           Application                (makeFoundation, makeLogWare)
+import           ClassyPrelude              as X hiding (Handler, delete,
+                                                  deleteBy)
+import           Control.Monad.Logger       (runLoggingT)
+import           Data.Aeson                 (FromJSON, Result (..), decode,
+                                             fromJSON)
+import qualified Data.ByteString.Lazy.Char8 as C
+import           Database.Persist.Extended  as X hiding (get)
+import           Database.Persist.Sql       (SqlPersistM, connEscapeName,
+                                             rawExecute, rawSql,
+                                             runSqlPersistMPool, unSingle)
+import           Database.Persist.Sqlite    (createSqlitePoolFromInfo,
+                                             fkEnabled, mkSqliteConnectionInfo,
+                                             sqlDatabase)
+import           Foundation                 as X
+import           Lens.Micro                 (set)
+import           Model                      as X
+import           Network.HTTP.Types.Header  as X
+import           Network.Wai.Test           (SResponse (..))
+import           Settings                   (appDatabaseConf)
+import           System.Environment         (setEnv)
+import           Test.Hspec                 as X
+import           Test.HUnit                 as X (assertFailure)
+import           Yesod.Auth                 as X
+import           Yesod.Core                 (messageLoggerSource)
+import           Yesod.Core.Unsafe          (fakeHandlerGetLogger)
+import           Yesod.Default.Config2      (loadYamlSettings, useEnv)
+import           Yesod.Test                 as X
 
--- Wiping the database
-import           Control.Monad.Logger          (runLoggingT)
-import qualified Data.ByteString.Lazy.Char8    as C
-import           Database.Persist.Sqlite       (createSqlitePoolFromInfo,
-                                                fkEnabled,
-                                                mkSqliteConnectionInfo,
-                                                sqlDatabase)
-import           Lens.Micro                    (set)
-import           Network.HTTP.Types.Header     as X
-import           Network.Wai.Test              (SResponse (..))
-import           Settings                      (appDatabaseConf)
-import           System.Environment            (setEnv)
-import           Test.HUnit                    as X (assertFailure)
-import           Yesod.Core                    (messageLoggerSource)
-
+-- | Run a DB query.
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do
     pool <- fmap appConnPool getTestYesod
     liftIO $ runSqlPersistMPool query pool
-
-runHandler :: Handler a -> YesodExample App a
-runHandler handler = do
-    app <- getTestYesod
-    fakeHandlerGetLogger appLogger app handler
 
 -- | Spec runner that sets up a test environment with DB.
 withApp :: SpecWith (TestApp App) -> Spec
@@ -93,6 +90,11 @@ authenticatedRequest userId reqBuilder = do
   request $ do
     addRequestHeader (hAuthorization, "token " ++ encodeUtf8 token)
     reqBuilder
+
+runHandler :: Handler a -> YesodExample App a
+runHandler handler = do
+    app <- getTestYesod
+    fakeHandlerGetLogger appLogger app handler
 
 -- | This function will truncate all of the tables in your database.
 -- 'withApp' calls it before each test, creating a clean environment for each

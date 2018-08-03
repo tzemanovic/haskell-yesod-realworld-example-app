@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5552c8f49924f662efd96fb67acfa48b10cc9837fba616b5747187fe12493599
+-- hash: 0c4d52bb72677a1011ec4eb19825e7ade9be95c3f355c740acc067ccc39ca020
 
 name:           app
 version:        0.0.1
@@ -50,7 +50,6 @@ library
     , classy-prelude >=0.10.2
     , classy-prelude-yesod >=0.10.2 && <1.0 || >=1.1
     , containers
-    , directory >=1.1 && <1.4
     , email-validate >=2.3
     , esqueleto >=2.5
     , fast-logger >=2.2 && <2.5
@@ -73,7 +72,6 @@ library
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
-    , word8
     , yaml >=0.8 && <0.9
     , yesod >=1.4.3 && <1.5
     , yesod-auth >=1.4.0 && <1.5
@@ -102,7 +100,6 @@ executable app
     , classy-prelude >=0.10.2
     , classy-prelude-yesod >=0.10.2 && <1.0 || >=1.1
     , containers
-    , directory >=1.1 && <1.4
     , email-validate >=2.3
     , esqueleto >=2.5
     , fast-logger >=2.2 && <2.5
@@ -125,7 +122,6 @@ executable app
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
-    , word8
     , yaml >=0.8 && <0.9
     , yesod >=1.4.3 && <1.5
     , yesod-auth >=1.4.0 && <1.5
@@ -154,7 +150,6 @@ test-suite test
     , classy-prelude >=0.10.2
     , classy-prelude-yesod >=0.10.2 && <1.0 || >=1.1
     , containers
-    , directory >=1.1 && <1.4
     , email-validate >=2.3
     , esqueleto >=2.5
     , fast-logger >=2.2 && <2.5
@@ -179,7 +174,6 @@ test-suite test
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
-    , word8
     , yaml >=0.8 && <0.9
     , yesod >=1.4.3 && <1.5
     , yesod-auth >=1.4.0 && <1.5
