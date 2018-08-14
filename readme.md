@@ -4,9 +4,7 @@
 
 > ### Haskell/Yesod codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
-# How it works
-
-> Describe the general architecture of your app here
+# [How it works](https://tzemanovic.gitlab.io/posts/realworld-example-with-haskell-yesod/)
 
 # Getting started
 
