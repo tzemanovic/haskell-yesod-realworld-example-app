@@ -14,16 +14,17 @@ import qualified Data.Text            as T
 import           Database.Persist.Sql (PersistFieldSql (..))
 import qualified Yesod.Auth.Util.PasswordStore as PS
 
+-- | Password is stored as a hash.
 newtype Password = Password
   { unPassword :: Text }
   deriving (Show, Eq)
 
--- | Instantiate a 'Password' from 'Text' safely stored as a hash
+-- | Instantiate a 'Password' from 'Text'.
 mkPassword :: MonadIO m => Text -> m Password
 mkPassword text =
   Password . decodeUtf8 <$> liftIO (PS.makePassword (encodeUtf8 text) 14)
 
--- | Check a raw password against DB password
+-- | Check a raw password against DB password.
 verifyPassword :: Text -> Password -> Bool
 verifyPassword rawPassword Password {..} =
   PS.verifyPassword (encodeUtf8 rawPassword) $ encodeUtf8 unPassword

@@ -15,7 +15,7 @@ import qualified Data.Text            as T
 import           Database.Persist.Sql (PersistFieldSql (..))
 import qualified Text.Email.Validate  as Email
 
--- | Custom Persistance field type that handles email validation.
+-- | Email is stored in a case-insensitive string.
 newtype Email = Email
   { unEmail :: CI Text }
   deriving (Show, Eq)
