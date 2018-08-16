@@ -1,0 +1,20 @@
+-- By default this file is used by `parseRoutesFile` in Foundation.hs
+-- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
+
+/api/articles ArticlesR GET POST
+/api/articles/feed ArticlesFeedR GET
+-- We have to start with exclamation mark to disable overlap checking.
+-- This is safe, because article's slug can never be equal to "feed".
+!/api/articles/#Text ArticleR GET PUT DELETE
+/api/articles/#Text/comments ArticleCommentsR POST GET
+/api/articles/#Text/comments/#Int ArticleCommentR DELETE
+/api/articles/#Text/favorite ArticleFavoriteR POST DELETE
+
+/api/profiles/#Text ProfilesR GET
+/api/profiles/#Text/follow FollowR POST DELETE
+
+/api/user UserR GET PUT
+/api/users UsersRegisterR POST
+/api/users/login UsersLoginR POST
+
+/api/tags TagsR GET

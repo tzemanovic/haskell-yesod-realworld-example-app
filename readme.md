@@ -1,44 +1,54 @@
-# ![RealWorld Example App](logo.png) (WIP)
+# ![RealWorld Example App](logo.png)
+
+[![Built with Spacemacs](https://cdn.rawgit.com/syl20bnr/spacemacs/442d025779da2f62fc86c2082703697714db6514/assets/spacemacs-badge.svg)](http://spacemacs.org) [![Build Status](https://travis-ci.org/tzemanovic/haskell-yesod-realworld-example-app.svg?branch=dev)](https://travis-ci.org/tzemanovic/haskell-yesod-realworld-example-app)
 
 > ### Haskell/Yesod codebase containing real world examples (CRUD, auth, advanced patterns, etc) that adheres to the [RealWorld](https://github.com/gothinkster/realworld) spec and API.
 
-
-### [Demo](https://github.com/gothinkster/realworld)&nbsp;&nbsp;&nbsp;&nbsp;[RealWorld](https://github.com/gothinkster/realworld)
-
-
-This codebase was created to demonstrate a fully fledged fullstack application built with **Haskell/Yesod** including CRUD operations, authentication, routing, pagination, and more.
-
-We've gone to great lengths to adhere to the **Haskell/Yesod** community styleguides & best practices.
-
-For more information on how to this works with other frontends/backends, head over to the [RealWorld](https://github.com/gothinkster/realworld) repo.
-
-# Progress
-API route status
-- [ ] Authentication (`POST /api/users/login`)
-- [ ] Registration (`POST /api/users`)
-- [ ] Get Current User (`GET /api/user`)
-- [ ] Update User (`PUT /api/user`)
-- [ ] Get Profile (`GET/api/profiles/:username`)
-- [ ] Follow user (`POST /api/profiles/:username/follow`)
-- [ ] Unfollow user (`DELETE /api/profiles/:username/follow`)
-- [ ] List Articles (`GET /api/articles`)
-- [ ] Feed Articles (`GET /api/articles/feed`)
-- [ ] Get Article (`GET /api/articles/:slug`)
-- [ ] Create Article (`POST /api/articles`)
-- [ ] Update Article (`PUT /api/articles/:slug`)
-- [ ] Delete Article (`DELETE /api/articles/:slug`)
-- [ ] Add Comments to an Article (`POST /api/articles/:slug/comments`)
-- [ ] Get Comments from an Article (`GET /api/articles/:slug/comments`)
-- [ ] Delete Comment (`DELETE /api/articles/:slug/comments/:id`)
-- [ ] Favourite Article (`POST /api/articles/:slug/favorite`)
-- [ ] Unfavourite Article (`DELETE /api/articles/:slug/favorite`)
-- [ ] Get Tags (`GET /api/tags`)
-
-# How it works
-
-> Describe the general architecture of your app here
+# [How it works](https://tzemanovic.gitlab.io/posts/realworld-example-with-haskell-yesod/)
 
 # Getting started
 
-> npm install, npm start, etc.
+## Haskell Setup
 
+1. If you haven't already, [install Stack](https://haskell-lang.org/get-started)
+	* On POSIX systems, this is usually `curl -sSL https://get.haskellstack.org/ | sh`
+2. Install the `yesod` command line tool: `stack install yesod-bin --install-ghc`
+3. Build libraries: `stack build`
+
+If you have trouble, refer to the [Yesod Quickstart guide](https://www.yesodweb.com/page/quickstart) for additional detail.
+
+## Development
+
+Start a development server with:
+
+```
+export JWT_SECRET="some secret value"
+stack exec -- yesod devel
+```
+
+As your code changes, your site will be automatically be recompiled and redeployed to localhost.
+
+## Tests
+
+```
+stack test --flag app:library-only --flag app:dev
+```
+
+(Because `yesod devel` passes the `library-only` and `dev` flags, matching those flags means you don't need to recompile between tests and development, and it disables optimization to speed up your test compile times).
+
+## Documentation
+
+* Read the [Yesod Book](https://www.yesodweb.com/book) online for free
+* Check [Stackage](http://stackage.org/) for documentation on the packages in your LTS Haskell version, or [search it using Hoogle](https://www.stackage.org/lts/hoogle?q=). Tip: Your LTS version is in your `stack.yaml` file.
+* For local documentation, use:
+	* `stack haddock --open` to generate Haddock documentation for your dependencies, and open that documentation in a browser
+	* `stack hoogle <function, module or type signature>` to generate a Hoogle database and search for your query
+* The [Yesod cookbook](https://github.com/yesodweb/yesod-cookbook) has sample code for various needs
+
+## Getting Help
+
+* Ask questions on [Stack Overflow, using the Yesod or Haskell tags](https://stackoverflow.com/questions/tagged/yesod+haskell)
+* Ask the [Yesod Google Group](https://groups.google.com/forum/#!forum/yesodweb)
+* There are several chatrooms you can ask for help:
+	* For IRC, try Freenode#yesod and Freenode#haskell
+	* [Functional Programming Slack](https://fpchat-invite.herokuapp.com/), in the #haskell, #haskell-beginners, or #yesod channels.
