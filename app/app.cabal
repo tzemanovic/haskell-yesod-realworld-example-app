@@ -1,13 +1,14 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0c4d52bb72677a1011ec4eb19825e7ade9be95c3f355c740acc067ccc39ca020
+-- hash: c713169442ef4d5e7534528a0f4f991b134fa1ae7439de48ac18a999c6169c11
 
 name:           app
 version:        0.0.1
 build-type:     Simple
-cabal-version:  >= 1.10
 
 flag dev
   description: Turn on development settings, like auto-reload templates.
