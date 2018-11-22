@@ -4,11 +4,21 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c713169442ef4d5e7534528a0f4f991b134fa1ae7439de48ac18a999c6169c11
+-- hash: a6a01ae501a74d96de144e88609a59e74b5265e5099d67d5df15f0c0433c4ebd
 
 name:           app
 version:        0.0.1
+homepage:       https://github.com/https://github.com/tzemanovic/haskell-yesod-realworld-example-app#readme
+bug-reports:    https://github.com/https://github.com/tzemanovic/haskell-yesod-realworld-example-app/issues
+author:         Tomas Zemanovic <tzemanovic@gmail.com>
+license:        BSD3
+license-file:   LICENSE.md
+tested-with:    GHC==8.2.2
 build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/https://github.com/tzemanovic/haskell-yesod-realworld-example-app
 
 flag dev
   description: Turn on development settings, like auto-reload templates.

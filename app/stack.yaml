@@ -1,4 +1,1 @@
-resolver: lts-10.10
-
-extra-deps:
-- forma-1.1.0
+stack-8.2.2.yaml

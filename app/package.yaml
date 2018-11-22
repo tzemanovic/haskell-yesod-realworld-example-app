@@ -1,5 +1,9 @@
-name:    app
-version: "0.0.1"
+name:         app
+version:      "0.0.1"
+tested-with:  GHC==8.2.2
+license-file: LICENSE.md
+author:       Tomas Zemanovic <tzemanovic@gmail.com>
+github:       https://github.com/tzemanovic/haskell-yesod-realworld-example-app
 
 dependencies:
 
