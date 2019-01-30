@@ -39,8 +39,8 @@ data App = App
 -- http://www.yesodweb.com/book/scaffolding-and-the-site-template#scaffolding-and-the-site-template_foundation_and_application_modules
 --
 -- This function also generates the following type synonyms:
--- type Handler = HandlerT App IO
--- type Widget = WidgetT App IO ()
+-- type Handler = HandlerFor App
+-- type Widget = WidgetFor App ()
 mkYesodData "App" $(parseRoutesFile "config/routes")
 
 -- | A convenient synonym for database access functions.
@@ -91,7 +91,8 @@ instance Yesod App where
 
     -- What messages should be logged. The following includes all messages when
     -- in development, and warnings and errors in production.
-    shouldLog app _source level =
+    shouldLogIO app _source level =
+        return $
         appShouldLogAll (appSettings app)
             || level == LevelWarn
             || level == LevelError
@@ -127,7 +128,7 @@ instance YesodAuth App where
 
     maybeAuthId = do
       mToken <- JWT.lookupToken
-      maybe (return Nothing) tokenToUserId mToken
+      liftHandler $ maybe (return Nothing) tokenToUserId mToken
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
@@ -161,7 +162,7 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
 
-userIdToToken :: UserId -> HandlerT App IO Text
+userIdToToken :: UserId -> HandlerFor App Text
 userIdToToken userId = do
   jwtSecret <- getJwtSecret
   return $ JWT.jsonToToken jwtSecret $ toJSON userId
@@ -174,6 +175,6 @@ tokenToUserId token = do
     Just (Success userId) -> return $ Just userId
     _                     -> return Nothing
 
-getJwtSecret :: HandlerT App IO Text
+getJwtSecret :: HandlerFor App Text
 getJwtSecret =
-  appJwtSecret . appSettings <$> ask
+  getsYesod $ appJwtSecret . appSettings

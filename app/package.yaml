@@ -15,7 +15,7 @@ dependencies:
 - classy-prelude-yesod >=0.10.2 && <1.0 || >=1.1
 
 - QuickCheck >= 2.10 
-- aeson >=0.6 && <1.3
+- aeson >=0.6 && <1.5
 - bytestring >=0.9 && <0.11
 - case-insensitive
 - classy-prelude >=0.10.2
@@ -27,12 +27,12 @@ dependencies:
 - foreign-store
 - forma >= 1.1
 - http-types >= 0.9
-- jwt >= 0.7.2 && <0.8
+- jwt >= 0.7.2 && <0.10
 - monad-control >=0.3 && <1.1
 - monad-logger >=0.3 && <0.4
 - mtl >= 2.2
-- persistent >=2.0 && <2.8
-- persistent-sqlite >=2.6.2 && <2.8
+- persistent >=2.0 && <2.10
+- persistent-sqlite >=2.6.2 && <2.10
 - persistent-template >=2.0 && <2.8
 - template-haskell
 - text >=0.11 && <2.0
@@ -42,10 +42,10 @@ dependencies:
 - wai-extra >=3.0 && <3.1
 - wai-logger >=2.2 && <2.4
 - warp >=3.0 && <3.3
-- yaml >=0.8 && <0.9
-- yesod >=1.4.3 && <1.5
-- yesod-auth >=1.4.0 && <1.5
-- yesod-core >=1.4.30 && <1.5
+- yaml >=0.8 && <0.12
+- yesod >=1.4.3 && <1.7
+- yesod-auth >=1.4.0 && <1.7
+- yesod-core >=1.4.30 && <1.7
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

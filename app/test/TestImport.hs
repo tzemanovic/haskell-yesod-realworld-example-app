@@ -80,7 +80,7 @@ getJsonResponse =
   withResponse $ \SResponse {..} ->
     case fromJSON <$> decode simpleBody of
       Just (Success a) -> return a
-      _ -> lift $ assertFailure $ "cannot decode JSON: " ++ C.unpack simpleBody
+      _ -> liftIO $ assertFailure $ "cannot decode JSON: " ++ C.unpack simpleBody
 
 -- | Build a request that gets a JWT token for a given user ID and uses it
 -- to set the request's authentication header.

@@ -22,7 +22,7 @@ spec = withApp $ do
         statusIs 404
 
       it "get user profile" $ do
-        _ <- insertUser username email password
+        void $ insertUser username email password
         get $ ProfilesR username
         statusIs 200
         response <- getJsonResponse
@@ -42,7 +42,7 @@ spec = withApp $ do
             otherPassword = "something" :: Text
         userId <- insertUser username email password
         otherUserId <- insertUser otherUsername otherEmail otherPassword
-        _ <- runDB $ insert UserFollower
+        void $ runDB $ insert UserFollower
               { userFollowerUser = otherUserId
               , userFollowerFollower = userId
               }
@@ -77,7 +77,7 @@ spec = withApp $ do
             otherPassword = "something" :: Text
         userId <- insertUser username email password
         otherUserId <- insertUser otherUsername otherEmail otherPassword
-        _ <- runDB $ insert UserFollower
+        void $ runDB $ insert UserFollower
               { userFollowerUser = otherUserId
               , userFollowerFollower = userId
               }
@@ -112,7 +112,7 @@ spec = withApp $ do
             otherPassword = "something" :: Text
         userId <- insertUser username email password
         otherUserId <- insertUser otherUsername otherEmail otherPassword
-        _ <- runDB $ insert UserFollower
+        void $ runDB $ insert UserFollower
               { userFollowerUser = otherUserId
               , userFollowerFollower = userId
               }

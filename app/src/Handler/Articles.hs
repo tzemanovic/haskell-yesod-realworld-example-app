@@ -94,28 +94,31 @@ createArticleForm =
 
 postArticlesR :: Handler Value
 postArticlesR = do
-  Just userId <- maybeAuthId
-  withForm createArticleForm $ \CreateArticle {..} -> do
-    now <- liftIO getCurrentTime
-    slug <- liftIO $ toSlug createArticleTitle
-    let article =
-          Article
-            userId
-            createArticleTitle
-            slug
-            createArticleDescription
-            createArticleBody
-            now
-            now
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId ->
+      withForm createArticleForm $ \CreateArticle {..} -> do
+        now <- liftIO getCurrentTime
+        slug <- liftIO $ toSlug createArticleTitle
+        let article =
+              Article
+                userId
+                createArticleTitle
+                slug
+                createArticleDescription
+                createArticleBody
+                now
+                now
 
-    articleId <- runDB $ insert article
+        articleId <- runDB $ insert article
 
-    forM_ createArticleTagList $
-      mapM_ $ \tag -> do
-        Entity tagId _ <- runDB $ upsert (Tag tag) []
-        runDB $ insert_ $ ArticleTag articleId tagId
+        forM_ createArticleTagList $
+          mapM_ $ \tag -> do
+            Entity tagId _ <- runDB $ upsert (Tag tag) []
+            runDB $ insert_ $ ArticleTag articleId tagId
 
-    getArticle articleId
+        getArticle articleId
 
 --------------------------------------------------------------------------------
 -- Update article
@@ -135,18 +138,21 @@ updateArticleForm =
 
 putArticleR :: Text -> Handler Value
 putArticleR slug = do
-  Just userId <- maybeAuthId
-  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mArticle <- runDB $ getBy $ UniqueArticleSlug slug
 
-  case mArticle of
+      case mArticle of
 
-    Just article@(Entity _ Article {..}) ->
-      if articleAuthor /= userId
-        then permissionDenied "Unauthorized"
-        else updateArticle article
+        Just article@(Entity _ Article {..}) ->
+          if articleAuthor /= userId
+            then permissionDenied "Unauthorized"
+            else updateArticle article
 
-    _  ->
-      notFound
+        _  ->
+          notFound
 
 updateArticle :: Entity Article -> Handler Value
 updateArticle (Entity articleId Article {..}) =
@@ -177,17 +183,20 @@ updateArticle (Entity articleId Article {..}) =
 
 deleteArticleR :: Text -> Handler Value
 deleteArticleR slug = do
-  Just userId <- maybeAuthId
-  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
-  case mArticle of
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+      case mArticle of
 
-    Just (Entity articleId Article {..}) ->
-      if articleAuthor /= userId
-        then permissionDenied "Unauthorized"
-        else deleteArticle articleId
+        Just (Entity articleId Article {..}) ->
+          if articleAuthor /= userId
+            then permissionDenied "Unauthorized"
+            else deleteArticle articleId
 
-    _  ->
-      notFound
+        _  ->
+          notFound
 
 deleteArticle :: ArticleId -> Handler Value
 deleteArticle articleId = do
@@ -219,78 +228,90 @@ createCommentForm =
 
 postArticleCommentsR :: Text -> Handler Value
 postArticleCommentsR slug = do
-  Just userId <- maybeAuthId
-  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
-  case mArticle of
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+      case mArticle of
 
-    Just (Entity articleId _) ->
-      withForm createCommentForm $ \CreateComment {..} -> do
-        now <- liftIO getCurrentTime
-        let comment =
-              ArticleComment
-                articleId
-                userId
-                createCommentBody
-                now
-                now
-        commentId <- runDB $ insert comment
-        getComment commentId
+        Just (Entity articleId _) ->
+          withForm createCommentForm $ \CreateComment {..} -> do
+            now <- liftIO getCurrentTime
+            let comment =
+                  ArticleComment
+                    articleId
+                    userId
+                    createCommentBody
+                    now
+                    now
+            commentId <- runDB $ insert comment
+            getComment commentId
 
-    _  ->
-      notFound
+        _  ->
+          notFound
 
 --------------------------------------------------------------------------------
 -- Delete article's comment
 
 deleteArticleCommentR :: Text -> Int -> Handler Value
 deleteArticleCommentR slug commentId = do
-  Just userId <- maybeAuthId
-  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
-  case mArticle of
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+      case mArticle of
 
-    Just (Entity _ Article {..}) ->
-      if articleAuthor == userId
-        then do
-          runDB $
-            deleteWhere [ArticleCommentId ==. toSqlKey (fromIntegral commentId)]
-          return Null
-        else permissionDenied "Unauthorized"
+        Just (Entity _ Article {..}) ->
+          if articleAuthor == userId
+            then do
+              runDB $
+                deleteWhere [ArticleCommentId ==. toSqlKey (fromIntegral commentId)]
+              return Null
+            else permissionDenied "Unauthorized"
 
-    _  ->
-      notFound
+        _  ->
+          notFound
 
 --------------------------------------------------------------------------------
 -- Favorite article
 
 postArticleFavoriteR :: Text -> Handler Value
 postArticleFavoriteR slug = do
-  Just userId <- maybeAuthId
-  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
-  case mArticle of
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+      case mArticle of
 
-    Just (Entity articleId _) -> do
-      let articleFavorite = ArticleFavorite articleId userId
-      _ <- runDB $ insertUnique articleFavorite
-      getArticle articleId
+        Just (Entity articleId _) -> do
+          let articleFavorite = ArticleFavorite articleId userId
+          void $ runDB $ insertUnique articleFavorite
+          getArticle articleId
 
-    _  ->
-      notFound
+        _  ->
+          notFound
 
 --------------------------------------------------------------------------------
 -- Unfavorite article
 
 deleteArticleFavoriteR :: Text -> Handler Value
 deleteArticleFavoriteR slug = do
-  Just userId <- maybeAuthId
-  mArticle <- runDB $ getBy $ UniqueArticleSlug slug
-  case mArticle of
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mArticle <- runDB $ getBy $ UniqueArticleSlug slug
+      case mArticle of
 
-    Just (Entity articleId _) -> do
-      runDB $ deleteBy $ UniqueArticleFavorite articleId userId
-      getArticle articleId
+        Just (Entity articleId _) -> do
+          runDB $ deleteBy $ UniqueArticleFavorite articleId userId
+          getArticle articleId
 
-    _  ->
-      notFound
+        _  ->
+          notFound
 
 --------------------------------------------------------------------------------
 -- Get all articles' tags

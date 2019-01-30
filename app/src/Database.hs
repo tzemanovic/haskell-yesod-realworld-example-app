@@ -15,7 +15,7 @@ module Database
   ) where
 
 import           ClassyPrelude.Yesod hiding (Value, isNothing, on, (==.))
-import qualified Data.Aeson as JSON
+import qualified Data.Aeson          as JSON
 import           Database.Esqueleto
 import           Foundation
 import           Model
@@ -184,18 +184,22 @@ type ArticleClause
 
 -- | Paginate articles produced by a given query.
 paginateArticles :: Monad m
-  => (ArticleClause -> m articles)              -- ^ articles query
-  -> (ArticleClause -> m [Value articlesCount]) -- ^ count query
+  => (ArticleClause -> m [article])             -- ^ articles query
+  -> (ArticleClause -> m [Value Int])           -- ^ count query
   -> Page                                       -- ^ page settings
   -> ArticleClause                              -- ^ clause used in both queries
-  -> m (articles, articlesCount)
+  -> m ([article], Int)
 paginateArticles query countQuery page clause = do
-  [Value articleCount] <- countQuery clause
+  aCount <- countQuery clause
   articles <-
     query $ \article author following -> do
       clause article author following
       paginate page
-  return (articles, articleCount)
+  case aCount of
+    [Value articleCount] ->
+      return (articles, articleCount)
+    _ ->
+      return (articles, length articles)
 
 -- | Get articles count for a given clause.
 getArticlesCount ::

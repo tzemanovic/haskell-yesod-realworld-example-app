@@ -11,10 +11,10 @@ module Handler.User
   , putUserR
   ) where
 
-import           Control.Monad.Except          (ExceptT, throwError)
-import           Data.Aeson                    (object)
+import           Control.Monad.Except      (ExceptT, throwError)
+import           Data.Aeson                (object)
 import           Database.Persist.Extended
-import           Import                        hiding (FormResult)
+import           Import                    hiding (FormResult)
 import           Web.Forma.Extended
 
 
@@ -80,9 +80,14 @@ postUsersRegisterR =
 
 getUserR :: Handler Value
 getUserR = do
-  Just userId <- maybeAuthId
-  Just user <- runDB $ get userId
-  encodeUser userId user
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mUser <- runDB $ get userId
+      case mUser of
+        Nothing   -> notAuthenticated
+        Just user -> encodeUser userId user
 
 --------------------------------------------------------------------------------
 -- Update current user
@@ -111,25 +116,31 @@ updateForm User {..} =
 
 putUserR :: Handler Value
 putUserR = do
-  Just userId <- maybeAuthId
-  Just user <- runDB $ get userId
-  withForm (updateForm user) $ \Update' {..} -> do
-    now <- liftIO getCurrentTime
-    pwdHash <-
-      case updatePassword of
-        Just pwd -> Just <$> mkPassword pwd
-        _        -> return Nothing
-    let updates =
-          catMaybes
-            [ maybeUpdate UserUsername updateUsername
-            , maybeUpdate UserEmail updateEmail
-            , maybeUpdate UserPassword pwdHash
-            , maybeUpdate UserImage updateImage
-            , maybeUpdate UserBio updateBio
-            , maybeUpdate UserUpdatedAt (Just now)
-            ]
-    updatedUser <- runDB $ updateGet userId updates
-    encodeUser userId updatedUser
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      mUser <- runDB $ get userId
+      case mUser of
+        Nothing -> notAuthenticated
+        Just user ->
+          withForm (updateForm user) $ \Update' {..} -> do
+            now <- liftIO getCurrentTime
+            pwdHash <-
+              case updatePassword of
+                Just pwd -> Just <$> mkPassword pwd
+                _        -> return Nothing
+            let updates =
+                  catMaybes
+                    [ maybeUpdate UserUsername updateUsername
+                    , maybeUpdate UserEmail updateEmail
+                    , maybeUpdate UserPassword pwdHash
+                    , maybeUpdate UserImage updateImage
+                    , maybeUpdate UserBio updateBio
+                    , maybeUpdate UserUpdatedAt (Just now)
+                    ]
+            updatedUser <- runDB $ updateGet userId updates
+            encodeUser userId updatedUser
 
 --------------------------------------------------------------------------------
 -- Input validations

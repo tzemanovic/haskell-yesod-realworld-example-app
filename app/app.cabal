@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.0.
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a6a01ae501a74d96de144e88609a59e74b5265e5099d67d5df15f0c0433c4ebd
+-- hash: 87b732ae21c53d14b2d328e241f06bfe347005ec06f3d1d9f3b990fd1b769f57
 
 name:           app
 version:        0.0.1
@@ -54,7 +54,7 @@ library
       src
   build-depends:
       QuickCheck >=2.10
-    , aeson >=0.6 && <1.3
+    , aeson >=0.6 && <1.5
     , base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
     , bytestring >=0.9 && <0.11
     , case-insensitive
@@ -68,12 +68,12 @@ library
     , foreign-store
     , forma >=1.1
     , http-types >=0.9
-    , jwt >=0.7.2 && <0.8
+    , jwt >=0.7.2 && <0.10
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
     , mtl >=2.2
-    , persistent >=2.0 && <2.8
-    , persistent-sqlite >=2.6.2 && <2.8
+    , persistent >=2.0 && <2.10
+    , persistent-sqlite >=2.6.2 && <2.10
     , persistent-template >=2.0 && <2.8
     , template-haskell
     , text >=0.11 && <2.0
@@ -83,10 +83,10 @@ library
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
-    , yaml >=0.8 && <0.9
-    , yesod >=1.4.3 && <1.5
-    , yesod-auth >=1.4.0 && <1.5
-    , yesod-core >=1.4.30 && <1.5
+    , yaml >=0.8 && <0.12
+    , yesod >=1.4.3 && <1.7
+    , yesod-auth >=1.4.0 && <1.7
+    , yesod-core >=1.4.30 && <1.7
   if (flag(dev)) || (flag(library-only))
     ghc-options: -Wall -fwarn-tabs -O0
     cpp-options: -DDEVELOPMENT
@@ -103,7 +103,7 @@ executable app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck >=2.10
-    , aeson >=0.6 && <1.3
+    , aeson >=0.6 && <1.5
     , app
     , base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
     , bytestring >=0.9 && <0.11
@@ -118,12 +118,12 @@ executable app
     , foreign-store
     , forma >=1.1
     , http-types >=0.9
-    , jwt >=0.7.2 && <0.8
+    , jwt >=0.7.2 && <0.10
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
     , mtl >=2.2
-    , persistent >=2.0 && <2.8
-    , persistent-sqlite >=2.6.2 && <2.8
+    , persistent >=2.0 && <2.10
+    , persistent-sqlite >=2.6.2 && <2.10
     , persistent-template >=2.0 && <2.8
     , template-haskell
     , text >=0.11 && <2.0
@@ -133,10 +133,10 @@ executable app
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
-    , yaml >=0.8 && <0.9
-    , yesod >=1.4.3 && <1.5
-    , yesod-auth >=1.4.0 && <1.5
-    , yesod-core >=1.4.30 && <1.5
+    , yaml >=0.8 && <0.12
+    , yesod >=1.4.3 && <1.7
+    , yesod-auth >=1.4.0 && <1.7
+    , yesod-core >=1.4.30 && <1.7
   if flag(library-only)
     buildable: False
   other-modules:
@@ -153,7 +153,7 @@ test-suite test
   build-depends:
       HUnit
     , QuickCheck >=2.10
-    , aeson >=0.6 && <1.3
+    , aeson >=0.6 && <1.5
     , app
     , base >=4.8.2.0 && <4.9 || >=4.9.1.0 && <5
     , bytestring >=0.9 && <0.11
@@ -169,13 +169,13 @@ test-suite test
     , forma >=1.1
     , hspec >=2.0.0
     , http-types >=0.9
-    , jwt >=0.7.2 && <0.8
+    , jwt >=0.7.2 && <0.10
     , microlens
     , monad-control >=0.3 && <1.1
     , monad-logger >=0.3 && <0.4
     , mtl >=2.2
-    , persistent >=2.0 && <2.8
-    , persistent-sqlite >=2.6.2 && <2.8
+    , persistent >=2.0 && <2.10
+    , persistent-sqlite >=2.6.2 && <2.10
     , persistent-template >=2.0 && <2.8
     , template-haskell
     , text >=0.11 && <2.0
@@ -185,10 +185,10 @@ test-suite test
     , wai-extra >=3.0 && <3.1
     , wai-logger >=2.2 && <2.4
     , warp >=3.0 && <3.3
-    , yaml >=0.8 && <0.9
-    , yesod >=1.4.3 && <1.5
-    , yesod-auth >=1.4.0 && <1.5
-    , yesod-core >=1.4.30 && <1.5
+    , yaml >=0.8 && <0.12
+    , yesod >=1.4.3 && <1.7
+    , yesod-auth >=1.4.0 && <1.7
+    , yesod-core >=1.4.30 && <1.7
     , yesod-test
   other-modules:
       Handler.ProfilesSpec

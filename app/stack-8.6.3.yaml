@@ -1,0 +1,6 @@
+resolver: lts-13.5
+packages:
+- .
+extra-deps:
+- esqueleto-2.6.0
+- jwt-0.9.0

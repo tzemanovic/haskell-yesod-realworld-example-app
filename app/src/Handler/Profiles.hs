@@ -32,10 +32,13 @@ getProfilesR username = do
 postFollowR :: Text -> Handler Value
 postFollowR username = do
   (Entity userId _) <- runDB $ getBy404 $ UniqueUserUsername username
-  Just currentUserId <- maybeAuthId
-  let follower = UserFollower userId currentUserId
-  _ <- runDB $ insertUnique follower
-  getProfilesR username
+  mCurrentUserId <- maybeAuthId
+  case mCurrentUserId of
+    Nothing -> notFound
+    Just currentUserId -> do
+      let follower = UserFollower userId currentUserId
+      void $ runDB $ insertUnique follower
+      getProfilesR username
 
 --------------------------------------------------------------------------------
 -- Unfollow User
@@ -43,6 +46,9 @@ postFollowR username = do
 deleteFollowR :: Text -> Handler Value
 deleteFollowR username = do
   (Entity userId _) <- runDB $ getBy404 $ UniqueUserUsername username
-  Just currentUserId <- maybeAuthId
-  runDB $ deleteBy $ UniqueUserFollower userId currentUserId
-  getProfilesR username
+  mCurrentUserId <- maybeAuthId
+  case mCurrentUserId of
+    Nothing -> notFound
+    Just currentUserId -> do
+      runDB $ deleteBy $ UniqueUserFollower userId currentUserId
+      getProfilesR username

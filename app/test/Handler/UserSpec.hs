@@ -47,7 +47,7 @@ spec = withApp $ do
         statusIs 401
 
       it "user can't login with wrong password" $ do
-        _ <- insertUser username email password
+        void $ insertUser username email password
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
@@ -75,7 +75,7 @@ spec = withApp $ do
         statusIs 422
 
       it "user can login with valid credentials" $ do
-        _ <- insertUser username email password
+        void $ insertUser username email password
         postBody UsersLoginR $ encode $ object
           [ "user" .= object
             [ "email" .= email
@@ -92,7 +92,7 @@ spec = withApp $ do
     describe "postUsersRegisterR" $ do
 
       it "user can't register with a duplicate username" $ do
-        _ <- insertUser username email password
+        void $ insertUser username email password
         postBody UsersRegisterR $ encode $ object
           [ "user" .= object
             [ "username" .= ("foo" :: Text)
@@ -103,7 +103,7 @@ spec = withApp $ do
         statusIs 422
 
       it "user can't register with an invalid email" $ do
-        _ <- insertUser username email password
+        void $ insertUser username email password
         postBody UsersRegisterR $ encode $ object
           [ "user" .= object
             [ "username" .= username
@@ -114,7 +114,7 @@ spec = withApp $ do
         statusIs 422
 
       it "user can't register with a duplicate email" $ do
-        _ <- insertUser username email password
+        void $ insertUser username email password
         postBody UsersRegisterR $ encode $ object
           [ "user" .= object
             [ "username" .= username
@@ -145,7 +145,7 @@ spec = withApp $ do
             assertEq "DB email matches" userEmail email
             assertEq "DB username matches" userUsername username
           _ ->
-            lift $ assertFailure "user not found in the DB"
+            liftIO $ assertFailure "user not found in the DB"
 
     describe "getUserR" $ do
 
@@ -168,7 +168,7 @@ spec = withApp $ do
             otherEmail = Email $ CI.mk otherRawEmail
             otherPassword = "something" :: Text
         userId <- insertUser username email password
-        _ <- insertUser otherUsername otherEmail otherPassword
+        void $ insertUser otherUsername otherEmail otherPassword
         authenticatedRequest userId $ do
           setMethod "PUT"
           setUrl UserR
@@ -200,4 +200,4 @@ spec = withApp $ do
             assertEq "DB username updated" userUsername newUsername
             assertEq "DB bio updated" userBio newBio
           _ ->
-            lift $ assertFailure "user not found in the DB"
+            liftIO $ assertFailure "user not found in the DB"
