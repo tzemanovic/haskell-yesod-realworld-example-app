@@ -44,6 +44,8 @@ import           Network.Wai.Middleware.RequestLogger (Destination (Logger),
                                                        destination,
                                                        mkRequestLogger,
                                                        outputFormat)
+import qualified Prelude                              as P
+import           System.Environment                   (lookupEnv)
 import           System.Log.FastLogger                (defaultBufSize,
                                                        newStdoutLoggerSet,
                                                        toLogStr)
@@ -156,7 +158,17 @@ getApplicationDev = do
     return (wsettings, app)
 
 getAppSettings :: IO AppSettings
-getAppSettings = loadYamlSettings [configSettingsYml] [] useEnv
+getAppSettings = do
+  checkEnvironment
+  loadYamlSettings [configSettingsYml] [] useEnv
+
+checkEnvironment :: IO ()
+checkEnvironment = do
+  mJwtSecret <- lookupEnv "JWT_SECRET"
+  case mJwtSecret of
+    Nothing ->
+      P.errorWithoutStackTrace "Set the \"JWT_SECRET\" environment variable"
+    _ -> return ()
 
 -- | main function for use by yesod devel
 develMain :: IO ()
